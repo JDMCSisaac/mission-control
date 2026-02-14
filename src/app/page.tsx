@@ -2,15 +2,18 @@
 import { PageTransition, StaggerGrid, StaggerItem } from "@/components/motion-wrapper";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 import {
   Users, UserPlus, DollarSign, ClipboardList,
-  Activity, TrendingUp, Target, ArrowRight, CheckCircle2
+  Activity, TrendingUp, Target, ArrowRight, CheckCircle2, Banknote
 } from "lucide-react";
 import { SAMPLE_CLIENTS, PIPELINE_STAGES, RECENT_ACTIVITY, getStats } from "@/lib/credit-repair-data";
 import { formatCurrency } from "@/lib/utils";
+import { getFundingStats } from "@/lib/funding-data";
 
 export default function HomePage() {
   const stats = getStats();
+  const fundingStats = getFundingStats();
 
   return (
     <PageTransition>
@@ -180,6 +183,41 @@ export default function HomePage() {
           </StaggerItem>
         </StaggerGrid>
       </div>
+
+      {/* Funding Overview */}
+      <StaggerItem>
+        <Link href="/funding">
+          <Card className="mt-4 p-4 cursor-pointer transition-all hover:border-emerald-500/20 group relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/[0.04] to-cyan-500/[0.04] pointer-events-none" />
+            <div className="relative flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center">
+                  <Banknote className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-white/80">Funding Division</h3>
+                  <p className="text-[10px] text-white/30">Credit card stacking \u0026 business funding</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="text-right">
+                  <p className="text-lg font-semibold text-emerald-400">{formatCurrency(fundingStats.totalFunded)}</p>
+                  <p className="text-[10px] text-white/30">Total Funded</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-medium text-white/60">{fundingStats.activeClients}</p>
+                  <p className="text-[10px] text-white/30">Active Clients</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-medium text-cyan-400">{fundingStats.successRate}%</p>
+                  <p className="text-[10px] text-white/30">Success Rate</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-white/20 group-hover:text-emerald-400 transition-colors" />
+              </div>
+            </div>
+          </Card>
+        </Link>
+      </StaggerItem>
     </PageTransition>
   );
 }

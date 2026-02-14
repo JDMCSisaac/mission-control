@@ -4,13 +4,14 @@ import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard, Settings2, Bot, MessageSquare,
+  LayoutDashboard, Settings2, Bot, MessageSquare, Banknote,
   FileText, Users, BookOpen, Wrench
 } from "lucide-react";
 
 const items = [
   { href: "/", label: "Home", icon: LayoutDashboard },
   { href: "/ops", label: "Pipeline", icon: Settings2 },
+  { href: "/funding", label: "Funding", icon: Banknote },
   { href: "/agents", label: "Agents", icon: Bot },
   { href: "/chat", label: "Chat", icon: MessageSquare },
   { href: "/content", label: "Content", icon: FileText },
