@@ -1,131 +1,95 @@
 "use client";
-import { useCallback, useState } from "react";
-import { useAutoRefresh } from "@/hooks/use-auto-refresh";
+import { useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { PageTransition, StaggerGrid, StaggerItem } from "@/components/motion-wrapper";
 import { TabBar } from "@/components/tab-bar";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { LoadingCards } from "@/components/loading-cards";
 import { EmptyState } from "@/components/empty-state";
-import { useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
 import {
-  Server, CheckCircle2, XCircle, Clock, AlertTriangle,
-  Calendar, ListTodo, Activity, ChevronRight, Zap
+  Activity, ListTodo, Calendar, ChevronRight, Users
 } from "lucide-react";
+import { PIPELINE_STAGES, SAMPLE_CLIENTS, CREDIT_REPAIR_TASKS } from "@/lib/credit-repair-data";
 
 const tabs = [
-  { id: "operations", label: "Operations", icon: <Activity className="h-3 w-3" /> },
+  { id: "operations", label: "Pipeline", icon: <Activity className="h-3 w-3" /> },
   { id: "tasks", label: "Tasks", icon: <ListTodo className="h-3 w-3" /> },
   { id: "calendar", label: "Calendar", icon: <Calendar className="h-3 w-3" /> },
 ];
 
-async function fetchOps() {
-  const [system, crons, tasks] = await Promise.all([
-    fetch("/api/system-state").then(r => r.json()),
-    fetch("/api/cron-health").then(r => r.json()),
-    fetch("/api/suggested-tasks").then(r => r.json()),
-  ]);
-  return { system, crons, tasks };
-}
-
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 7);
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const DEMO_EVENTS = [
-  { title: "Standup", day: 0, hour: 9, duration: 0.5, color: "bg-blue-500/20 border-blue-500/30 text-blue-400" },
-  { title: "Client Call", day: 1, hour: 14, duration: 1, color: "bg-purple-500/20 border-purple-500/30 text-purple-400" },
-  { title: "Deploy Window", day: 2, hour: 10, duration: 2, color: "bg-amber-500/20 border-amber-500/30 text-amber-400" },
-  { title: "Sprint Review", day: 4, hour: 15, duration: 1, color: "bg-emerald-500/20 border-emerald-500/30 text-emerald-400" },
-  { title: "1:1", day: 3, hour: 11, duration: 0.5, color: "bg-rose-500/20 border-rose-500/30 text-rose-400" },
-  { title: "Team Sync", day: 0, hour: 14, duration: 1, color: "bg-cyan-500/20 border-cyan-500/30 text-cyan-400" },
+  { title: "Check Dispute Status", day: 0, hour: 9, duration: 1, color: "bg-blue-500/20 border-blue-500/30 text-blue-400" },
+  { title: "Kim Sync", day: 1, hour: 10, duration: 0.5, color: "bg-pink-500/20 border-pink-500/30 text-pink-400" },
+  { title: "Victor Case Review", day: 2, hour: 14, duration: 1, color: "bg-purple-500/20 border-purple-500/30 text-purple-400" },
+  { title: "IG Content Post", day: 3, hour: 11, duration: 0.5, color: "bg-amber-500/20 border-amber-500/30 text-amber-400" },
+  { title: "New Lead Follow-ups", day: 4, hour: 9, duration: 1, color: "bg-emerald-500/20 border-emerald-500/30 text-emerald-400" },
+  { title: "Client Onboarding Calls", day: 0, hour: 14, duration: 1, color: "bg-orange-500/20 border-orange-500/30 text-orange-400" },
+  { title: "Bureau Response Check", day: 3, hour: 15, duration: 0.5, color: "bg-cyan-500/20 border-cyan-500/30 text-cyan-400" },
 ];
 
 export function OpsContent() {
   const searchParams = useSearchParams();
   const activeTab = searchParams.get("tab") || "operations";
-  const fetcher = useCallback(() => fetchOps(), []);
-  const { data, loading } = useAutoRefresh(fetcher);
   const [taskAction, setTaskAction] = useState<Record<string, string>>({});
-
-  if (loading || !data) return <div className="pt-8"><LoadingCards count={6} /></div>;
-
-  const { system, crons, tasks } = data;
-
-  const handleTask = async (id: string, action: string) => {
-    setTaskAction(prev => ({ ...prev, [id]: action }));
-    await fetch("/api/suggested-tasks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status: action }),
-    });
-  };
 
   return (
     <PageTransition>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-white/90">Operations</h1>
-          <p className="text-xs text-white/30 mt-0.5">System health, tasks & scheduling</p>
+          <h1 className="text-lg font-semibold text-white/90">Pipeline & Operations</h1>
+          <p className="text-xs text-white/30 mt-0.5">Client pipeline, tasks & scheduling</p>
         </div>
         <TabBar tabs={tabs} layoutId="ops-tab" />
       </div>
 
       {activeTab === "operations" && (
-        <div className="space-y-6">
-          <StaggerGrid className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <StaggerItem>
-              <Card>
-                <CardHeader><CardTitle className="flex items-center gap-2"><Server className="h-3.5 w-3.5 text-emerald-400" />Services</CardTitle></CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {(system.services || []).map((s: any) => (
-                      <div key={s.name} className="flex items-center justify-between py-1.5 border-b border-white/[0.04] last:border-0">
-                        <div className="flex items-center gap-2.5">
-                          {s.status === "up" ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> : <XCircle className="h-3.5 w-3.5 text-red-400" />}
-                          <span className="text-xs font-medium text-white/70">{s.name}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {s.port && <span className="text-[10px] font-mono text-white/20">:{s.port}</span>}
-                          <Badge variant={s.status === "up" ? "success" : "danger"}>{s.status}</Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </StaggerItem>
-
-            <StaggerItem>
-              <Card>
-                <CardHeader><CardTitle className="flex items-center gap-2"><Clock className="h-3.5 w-3.5 text-blue-400" />Cron Jobs</CardTitle></CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {(crons.jobs || []).map((j: any) => (
-                      <div key={j.name} className="flex items-center justify-between py-1.5 border-b border-white/[0.04] last:border-0">
-                        <div>
-                          <span className="text-xs font-medium text-white/70">{j.name}</span>
-                          <p className="text-[10px] font-mono text-white/20 mt-0.5">{j.schedule}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {j.consecutiveErrors > 0 && (
-                            <span className="text-[10px] text-red-400">{j.consecutiveErrors} errors</span>
-                          )}
-                          <Badge variant={j.lastStatus === "ok" ? "success" : "danger"}>{j.lastStatus}</Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </StaggerItem>
-          </StaggerGrid>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 gap-2 overflow-x-auto">
+          {PIPELINE_STAGES.map((stage) => {
+            const clients = SAMPLE_CLIENTS.filter(c => c.stage === stage.id);
+            return (
+              <div key={stage.id} className="min-w-[160px]">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className={`text-[10px] font-medium uppercase tracking-wider ${stage.color}`}>{stage.label}</h3>
+                  <Badge variant="default">{clients.length}</Badge>
+                </div>
+                <div className="space-y-2 min-h-[200px] rounded-2xl p-1.5 bg-white/[0.01] border border-dashed border-white/[0.04]">
+                  {clients.length === 0 ? (
+                    <EmptyState icon={<Users className="h-3 w-3" />} title="" className="py-4" />
+                  ) : (
+                    clients.map((c, i) => (
+                      <motion.div
+                        key={c.id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        className={`rounded-xl border p-2.5 ${stage.bg}`}
+                      >
+                        <h4 className="text-[11px] font-medium text-white/70 mb-1">{c.name}</h4>
+                        <Badge variant={c.serviceLevel === "vip_litigation" ? "purple" : "info"} className="text-[8px] mb-1.5">
+                          {c.serviceLevel === "vip_litigation" ? "L2 VIP" : "L1 Sweep"}
+                        </Badge>
+                        <p className="text-[9px] text-white/30 line-clamp-2">{c.nextAction}</p>
+                        {c.assignedPartner !== "Unassigned" && (
+                          <p className="text-[9px] text-white/20 mt-1">→ {c.assignedPartner}</p>
+                        )}
+                      </motion.div>
+                    ))
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
       {activeTab === "tasks" && (
         <div className="space-y-4">
           {["high", "medium", "low"].map((priority) => {
-            const filtered = (tasks.tasks || []).filter((t: any) => t.priority === priority);
+            const filtered = CREDIT_REPAIR_TASKS.filter(t => t.priority === priority);
             if (filtered.length === 0) return null;
             return (
               <div key={priority}>
@@ -134,24 +98,24 @@ export function OpsContent() {
                   {priority} priority
                 </h3>
                 <StaggerGrid className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {filtered.map((t: any) => (
+                  {filtered.map((t) => (
                     <StaggerItem key={t.id}>
                       <Card className="p-4">
                         <div className="flex items-start justify-between mb-2">
-                          <Badge variant={t.category === "Infrastructure" ? "info" : t.category === "Revenue" ? "success" : t.category === "Agent" ? "purple" : "warning"}>
+                          <Badge variant={t.category === "Sales" ? "warning" : t.category === "Disputes" ? "info" : t.category === "Onboarding" ? "success" : t.category === "Marketing" ? "purple" : "default"}>
                             {t.category}
                           </Badge>
-                          <Badge variant={taskAction[t.id] === "approved" ? "success" : taskAction[t.id] === "rejected" ? "danger" : t.status === "approved" ? "success" : "default"}>
+                          <Badge variant={taskAction[t.id] === "done" ? "success" : "default"}>
                             {taskAction[t.id] || t.status}
                           </Badge>
                         </div>
                         <h4 className="text-sm font-medium text-white/80 mb-1">{t.title}</h4>
-                        <p className="text-xs text-white/40 mb-1">{t.reasoning}</p>
+                        <p className="text-xs text-white/40 mb-1">{t.description}</p>
                         <p className="text-xs text-white/30 mb-3 flex items-center gap-1"><ChevronRight className="h-3 w-3" />{t.nextAction}</p>
-                        {!taskAction[t.id] && t.status === "pending" && (
+                        {!taskAction[t.id] && (
                           <div className="flex gap-2">
-                            <Button size="sm" variant="primary" onClick={() => handleTask(t.id, "approved")}>Approve</Button>
-                            <Button size="sm" variant="ghost" onClick={() => handleTask(t.id, "rejected")}>Reject</Button>
+                            <Button size="sm" variant="primary" onClick={() => setTaskAction(prev => ({ ...prev, [t.id]: "done" }))}>Done</Button>
+                            <Button size="sm" variant="ghost" onClick={() => setTaskAction(prev => ({ ...prev, [t.id]: "skipped" }))}>Skip</Button>
                           </div>
                         )}
                       </Card>
@@ -173,8 +137,8 @@ export function OpsContent() {
                 <div key={d} className="border-b border-white/[0.04] border-l border-white/[0.04] p-2 text-center text-white/40 font-medium">{d}</div>
               ))}
               {HOURS.map(h => (
-                <>
-                  <div key={`h-${h}`} className="border-b border-white/[0.04] p-2 text-right text-[10px] text-white/20 font-mono pr-3">
+                <div key={`row-${h}`} className="contents">
+                  <div className="border-b border-white/[0.04] p-2 text-right text-[10px] text-white/20 font-mono pr-3">
                     {h.toString().padStart(2, "0")}:00
                   </div>
                   {DAYS.map((_, di) => {
@@ -190,7 +154,7 @@ export function OpsContent() {
                       </div>
                     );
                   })}
-                </>
+                </div>
               ))}
             </div>
           </CardContent>

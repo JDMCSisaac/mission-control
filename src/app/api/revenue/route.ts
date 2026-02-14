@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server';
-import { readJsonFile } from '@/lib/workspace';
+import { getStats } from '@/lib/credit-repair-data';
 
 export async function GET() {
-  const data = await readJsonFile('state/revenue.json', {
-    currentMonth: { revenue: 4250, burn: 1890, net: 2360 },
-    lastMonth: { revenue: 3800, burn: 1750, net: 2050 },
-    ytd: { revenue: 28400, burn: 12600, net: 15800 },
-    clients: 6,
-    mrr: 4250,
+  const stats = getStats();
+  return NextResponse.json({
+    currentMonth: { revenue: stats.totalRevenue, burn: 2400, net: stats.totalRevenue - 2400 },
+    lastMonth: { revenue: 38500, burn: 2200, net: 36300 },
+    ytd: { revenue: stats.totalRevenue + 38500, burn: 4600, net: stats.totalRevenue + 38500 - 4600 },
+    clients: stats.activeClients,
+    mrr: stats.totalRevenue,
+    l1: stats.l1,
+    l2: stats.l2,
   });
-  return NextResponse.json(data);
 }

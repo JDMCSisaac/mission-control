@@ -1,50 +1,31 @@
 "use client";
-import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { PageTransition, StaggerGrid, StaggerItem } from "@/components/motion-wrapper";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LoadingCards } from "@/components/loading-cards";
-import { useCallback } from "react";
 import {
-  Activity, Bot, MessageSquare, FileText, AlertTriangle,
-  CheckCircle2, Clock, DollarSign, Server, Zap
+  Users, UserPlus, DollarSign, ClipboardList,
+  Activity, TrendingUp, Target, ArrowRight, CheckCircle2
 } from "lucide-react";
-import { formatCurrency, formatRelativeTime } from "@/lib/utils";
-
-async function fetchDashboard() {
-  const [health, agents, revenue, crons, priorities, observations] = await Promise.all([
-    fetch("/api/health").then(r => r.json()),
-    fetch("/api/agents").then(r => r.json()),
-    fetch("/api/revenue").then(r => r.json()),
-    fetch("/api/cron-health").then(r => r.json()),
-    fetch("/api/priorities").then(r => r.json()),
-    fetch("/api/observations").then(r => r.json()),
-  ]);
-  return { health, agents, revenue, crons, priorities, observations };
-}
+import { SAMPLE_CLIENTS, PIPELINE_STAGES, RECENT_ACTIVITY, getStats } from "@/lib/credit-repair-data";
+import { formatCurrency } from "@/lib/utils";
 
 export default function HomePage() {
-  const fetcher = useCallback(() => fetchDashboard(), []);
-  const { data, loading } = useAutoRefresh(fetcher);
-
-  if (loading || !data) return <div className="pt-8"><LoadingCards count={8} /></div>;
-
-  const { health, agents, revenue, crons, priorities, observations } = data;
-  const failedCrons = (crons.jobs || []).filter((j: any) => j.lastStatus === "error");
+  const stats = getStats();
 
   return (
     <PageTransition>
       <div className="mb-6">
-        <h1 className="text-lg font-semibold text-white/90">Mission Control</h1>
-        <p className="text-xs text-white/30 mt-0.5">System overview · Auto-refreshing every 15s</p>
+        <h1 className="text-lg font-semibold text-white/90">Credit Repair Command Center</h1>
+        <p className="text-xs text-white/30 mt-0.5">Business overview · Jake&apos;s Credit Repair</p>
       </div>
 
+      {/* Top Stats */}
       <StaggerGrid className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {[
-          { label: "Uptime", value: health.uptimeFormatted, icon: Clock, color: "text-emerald-400" },
-          { label: "Agents", value: `${agents.stats?.active || 0}/${agents.stats?.total || 0}`, icon: Bot, color: "text-blue-400" },
-          { label: "MRR", value: formatCurrency(revenue.mrr || 0), icon: DollarSign, color: "text-amber-400" },
-          { label: "Cron Errors", value: failedCrons.length, icon: failedCrons.length > 0 ? AlertTriangle : CheckCircle2, color: failedCrons.length > 0 ? "text-red-400" : "text-emerald-400" },
+          { label: "Active Clients", value: stats.activeClients, icon: Users, color: "text-blue-400" },
+          { label: "New Leads", value: stats.newLeadsThisWeek, icon: UserPlus, color: "text-emerald-400" },
+          { label: "Revenue (Month)", value: formatCurrency(stats.revenueThisMonth), icon: DollarSign, color: "text-amber-400" },
+          { label: "Pending Onboarding", value: stats.pendingOnboarding, icon: ClipboardList, color: "text-orange-400" },
         ].map((stat) => (
           <StaggerItem key={stat.label}>
             <Card className="p-4">
@@ -59,32 +40,49 @@ export default function HomePage() {
       </StaggerGrid>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Left Column */}
         <StaggerGrid className="lg:col-span-2 space-y-4">
+          {/* Pipeline Summary */}
           <StaggerItem>
             <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2"><Zap className="h-3.5 w-3.5 text-blue-400" />Priorities</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="flex items-center gap-2"><Target className="h-3.5 w-3.5 text-blue-400" />Pipeline</CardTitle></CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {(priorities.priorities || []).map((p: string, i: number) => (
-                    <div key={i} className="flex items-start gap-3 py-2 border-b border-white/[0.04] last:border-0">
-                      <span className="text-[10px] font-mono text-white/20 mt-0.5 w-4">{String(i + 1).padStart(2, "0")}</span>
-                      <p className="text-xs text-white/60 leading-relaxed">{p}</p>
-                    </div>
-                  ))}
+                  {PIPELINE_STAGES.map((stage) => {
+                    const count = stats.pipelineCounts[stage.id] || 0;
+                    const maxCount = Math.max(...Object.values(stats.pipelineCounts));
+                    const width = maxCount > 0 ? (count / maxCount) * 100 : 0;
+                    return (
+                      <div key={stage.id} className="flex items-center gap-3 py-1.5">
+                        <span className={`text-[10px] font-medium w-28 shrink-0 ${stage.color}`}>{stage.label}</span>
+                        <div className="flex-1 h-5 rounded-lg bg-white/[0.03] overflow-hidden relative">
+                          <div
+                            className="h-full rounded-lg bg-gradient-to-r from-blue-500/20 to-blue-500/40 transition-all duration-500"
+                            style={{ width: `${width}%` }}
+                          />
+                          <span className="absolute inset-0 flex items-center px-2 text-[10px] font-mono text-white/50">{count}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
           </StaggerItem>
 
+          {/* Recent Activity */}
           <StaggerItem>
             <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2"><Activity className="h-3.5 w-3.5 text-purple-400" />Observations</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="flex items-center gap-2"><Activity className="h-3.5 w-3.5 text-purple-400" />Recent Activity</CardTitle></CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {(observations.observations || []).map((o: string, i: number) => (
-                    <div key={i} className="flex items-start gap-2 py-1.5">
-                      <div className="h-1 w-1 rounded-full bg-white/20 mt-1.5 shrink-0" />
-                      <p className="text-xs text-white/50">{o}</p>
+                  {RECENT_ACTIVITY.map((a, i) => (
+                    <div key={i} className="flex items-start gap-3 py-2 border-b border-white/[0.04] last:border-0">
+                      <div className={`h-1.5 w-1.5 rounded-full mt-1.5 shrink-0 ${a.type === "success" ? "bg-emerald-400" : a.type === "action" ? "bg-blue-400" : "bg-amber-400"}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-white/60">{a.text}</p>
+                      </div>
+                      <span className="text-[10px] text-white/20 shrink-0">{a.time}</span>
                     </div>
                   ))}
                 </div>
@@ -93,58 +91,89 @@ export default function HomePage() {
           </StaggerItem>
         </StaggerGrid>
 
+        {/* Right Column */}
         <StaggerGrid className="space-y-4">
+          {/* Dispute Status */}
           <StaggerItem>
             <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2"><Bot className="h-3.5 w-3.5 text-blue-400" />Agents</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="flex items-center gap-2"><ClipboardList className="h-3.5 w-3.5 text-pink-400" />Team Workload</CardTitle></CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="p-3 rounded-xl bg-pink-500/[0.06] border border-pink-500/[0.1]">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-pink-400">Kim&apos;s Team (L1)</span>
+                      <Badge variant="default">{stats.withKim} clients</Badge>
+                    </div>
+                    <p className="text-[10px] text-white/30">4 Round Sweep</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-purple-500/[0.06] border border-purple-500/[0.1]">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-purple-400">Victor&apos;s Team (L2)</span>
+                      <Badge variant="default">{stats.withVictor} clients</Badge>
+                    </div>
+                    <p className="text-[10px] text-white/30">VIP Advanced Litigation</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </StaggerItem>
+
+          {/* Revenue Breakdown */}
+          <StaggerItem>
+            <Card>
+              <CardHeader><CardTitle className="flex items-center gap-2"><TrendingUp className="h-3.5 w-3.5 text-amber-400" />Revenue</CardTitle></CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {(agents.agents || []).map((a: any) => (
-                    <div key={a.id} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className={`h-1.5 w-1.5 rounded-full ${a.status === "active" ? "bg-emerald-400" : "bg-white/20"}`} />
-                        <span className="text-xs text-white/70">{a.name}</span>
+                  <div className="flex items-center justify-between py-1">
+                    <span className="text-xs text-white/40">L1 (4 Round Sweep)</span>
+                    <span className="text-xs font-medium text-white/70">{formatCurrency(stats.l1.revenue)}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1">
+                    <span className="text-xs text-white/40">L2 (VIP Litigation)</span>
+                    <span className="text-xs font-medium text-white/70">{formatCurrency(stats.l2.revenue)}</span>
+                  </div>
+                  <div className="border-t border-white/[0.06] pt-2 flex items-center justify-between">
+                    <span className="text-xs text-white/50 font-medium">Total</span>
+                    <span className="text-sm font-semibold text-amber-400">{formatCurrency(stats.totalRevenue)}</span>
+                  </div>
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] text-white/30">Goal: {formatCurrency(stats.revenueGoal)}</span>
+                      <span className="text-[10px] text-white/30">{Math.round((stats.totalRevenue / stats.revenueGoal) * 100)}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-white/[0.04] overflow-hidden">
+                      <div className="h-full rounded-full bg-gradient-to-r from-amber-500 to-amber-400" style={{ width: `${Math.min((stats.totalRevenue / stats.revenueGoal) * 100, 100)}%` }} />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </StaggerItem>
+
+          {/* Onboarding Queue */}
+          <StaggerItem>
+            <Card>
+              <CardHeader><CardTitle className="flex items-center gap-2"><ClipboardList className="h-3.5 w-3.5 text-orange-400" />Onboarding Queue</CardTitle></CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {SAMPLE_CLIENTS.filter(c => c.stage === "onboarding").map(c => (
+                    <div key={c.id} className="p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-medium text-white/70">{c.name}</span>
+                        <span className="text-[10px] text-orange-400">{c.onboardingProgress}%</span>
                       </div>
-                      <Badge variant={a.status === "active" ? "success" : "default"}>{a.status}</Badge>
+                      <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+                        <div className="h-full rounded-full bg-orange-400/60" style={{ width: `${c.onboardingProgress}%` }} />
+                      </div>
+                      <p className="text-[10px] text-white/30 mt-1.5">{c.nextAction}</p>
                     </div>
                   ))}
-                </div>
-              </CardContent>
-            </Card>
-          </StaggerItem>
-
-          <StaggerItem>
-            <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2"><Server className="h-3.5 w-3.5 text-emerald-400" />Cron Jobs</CardTitle></CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {(crons.jobs || []).map((j: any) => (
-                    <div key={j.name} className="flex items-center justify-between py-1">
-                      <span className="text-xs text-white/60 font-mono">{j.name}</span>
-                      <Badge variant={j.lastStatus === "ok" ? "success" : "danger"}>{j.lastStatus}</Badge>
+                  {SAMPLE_CLIENTS.filter(c => c.stage === "onboarding").length === 0 && (
+                    <div className="flex items-center gap-2 text-xs text-white/30 py-4 justify-center">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                      All caught up!
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </StaggerItem>
-
-          <StaggerItem>
-            <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2"><DollarSign className="h-3.5 w-3.5 text-amber-400" />Revenue</CardTitle></CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {[
-                    { label: "This Month", value: formatCurrency(revenue.currentMonth?.revenue || 0) },
-                    { label: "Burn", value: formatCurrency(revenue.currentMonth?.burn || 0) },
-                    { label: "Net", value: formatCurrency(revenue.currentMonth?.net || 0) },
-                    { label: "YTD", value: formatCurrency(revenue.ytd?.revenue || 0) },
-                  ].map((r) => (
-                    <div key={r.label} className="flex items-center justify-between py-1">
-                      <span className="text-xs text-white/40">{r.label}</span>
-                      <span className="text-xs font-medium text-white/70">{r.value}</span>
-                    </div>
-                  ))}
+                  )}
                 </div>
               </CardContent>
             </Card>

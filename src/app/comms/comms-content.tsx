@@ -1,120 +1,145 @@
 "use client";
-import { useCallback } from "react";
-import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { useSearchParams } from "next/navigation";
 import { PageTransition, StaggerGrid, StaggerItem } from "@/components/motion-wrapper";
 import { TabBar } from "@/components/tab-bar";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LoadingCards } from "@/components/loading-cards";
 import { EmptyState } from "@/components/empty-state";
 import { motion } from "framer-motion";
-import { Radio, Users, MessageCircle, Mail, Phone } from "lucide-react";
+import { Users, MessageCircle, ExternalLink, Phone, Mail, Instagram } from "lucide-react";
+import { PIPELINE_STAGES, SAMPLE_CLIENTS, IG_PAGES } from "@/lib/credit-repair-data";
+import { formatCurrency } from "@/lib/utils";
 
 const tabs = [
-  { id: "comms", label: "Comms", icon: <Radio className="h-3 w-3" /> },
   { id: "crm", label: "CRM", icon: <Users className="h-3 w-3" /> },
-];
-
-const CRM_STAGES = [
-  { id: "prospect", label: "Prospect", color: "text-white/40", bg: "bg-white/[0.03] border-white/[0.06]" },
-  { id: "contacted", label: "Contacted", color: "text-blue-400", bg: "bg-blue-500/[0.06] border-blue-500/[0.12]" },
-  { id: "meeting", label: "Meeting", color: "text-amber-400", bg: "bg-amber-500/[0.06] border-amber-500/[0.12]" },
-  { id: "proposal", label: "Proposal", color: "text-purple-400", bg: "bg-purple-500/[0.06] border-purple-500/[0.12]" },
-  { id: "active", label: "Active", color: "text-emerald-400", bg: "bg-emerald-500/[0.06] border-emerald-500/[0.12]" },
+  { id: "channels", label: "Channels", icon: <MessageCircle className="h-3 w-3" /> },
 ];
 
 const CHANNELS = [
-  { name: "Telegram", status: "connected", messages: 142, unread: 3, icon: MessageCircle, color: "text-blue-400" },
-  { name: "Discord", status: "connected", messages: 89, unread: 0, icon: MessageCircle, color: "text-indigo-400" },
-  { name: "Email", status: "connected", messages: 24, unread: 7, icon: Mail, color: "text-amber-400" },
-  { name: "Voice", status: "standby", messages: 0, unread: 0, icon: Phone, color: "text-white/30" },
+  { name: "Telegram", status: "connected", description: "Client onboarding groups", icon: MessageCircle, color: "text-blue-400", detail: "12 active groups" },
+  { name: "Instagram DMs", status: "connected", description: "Lead acquisition", icon: Instagram, color: "text-pink-400", detail: "3 pages connected" },
+  { name: "iMessage/SMS", status: "connected", description: "Referral follow-ups", icon: Phone, color: "text-emerald-400", detail: "Text referrals" },
+  { name: "Email", status: "standby", description: "Document collection", icon: Mail, color: "text-amber-400", detail: "For credit reports" },
 ];
-
-async function fetchComms() {
-  return fetch("/api/clients").then(r => r.json());
-}
 
 export function CommsContent() {
   const searchParams = useSearchParams();
-  const activeTab = searchParams.get("tab") || "comms";
-  const fetcher = useCallback(() => fetchComms(), []);
-  const { data, loading } = useAutoRefresh(fetcher);
-
-  if (loading || !data) return <div className="pt-8"><LoadingCards count={5} /></div>;
-
-  const clients = data.clients || [];
+  const activeTab = searchParams.get("tab") || "crm";
 
   return (
     <PageTransition>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-semibold text-white/90">Communications</h1>
-          <p className="text-xs text-white/30 mt-0.5">Channels & client management</p>
+          <h1 className="text-lg font-semibold text-white/90">Clients & Communications</h1>
+          <p className="text-xs text-white/30 mt-0.5">{SAMPLE_CLIENTS.length} clients · CRM & channels</p>
         </div>
         <TabBar tabs={tabs} layoutId="comms-tab" />
       </div>
 
-      {activeTab === "comms" && (
-        <StaggerGrid className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {CHANNELS.map((ch) => (
-            <StaggerItem key={ch.name}>
-              <Card className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className={`h-8 w-8 rounded-xl bg-white/[0.04] flex items-center justify-center`}>
-                      <ch.icon className={`h-4 w-4 ${ch.color}`} />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-white/80">{ch.name}</h3>
-                      <p className="text-[10px] text-white/30">{ch.messages} messages</p>
-                    </div>
-                  </div>
-                  <Badge variant={ch.status === "connected" ? "success" : "default"}>{ch.status}</Badge>
-                </div>
-                {ch.unread > 0 && (
-                  <div className="flex items-center gap-2 mt-2 px-2.5 py-1.5 rounded-lg bg-blue-500/[0.06] border border-blue-500/[0.1]">
-                    <div className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
-                    <span className="text-[10px] text-blue-400">{ch.unread} unread</span>
-                  </div>
-                )}
-              </Card>
-            </StaggerItem>
-          ))}
-        </StaggerGrid>
-      )}
-
       {activeTab === "crm" && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 overflow-x-auto">
-          {CRM_STAGES.map((stage) => {
-            const stageClients = clients.filter((c: any) => c.stage === stage.id);
+        <div className="space-y-6">
+          {/* Client Cards - Scrollable by stage */}
+          {PIPELINE_STAGES.filter(s => SAMPLE_CLIENTS.some(c => c.stage === s.id)).map((stage) => {
+            const clients = SAMPLE_CLIENTS.filter(c => c.stage === stage.id);
             return (
               <div key={stage.id}>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className={`text-[10px] font-medium uppercase tracking-wider ${stage.color}`}>{stage.label}</h3>
-                  <Badge variant="default">{stageClients.length}</Badge>
+                <div className="flex items-center gap-2 mb-3">
+                  <h3 className={`text-xs font-medium uppercase tracking-wider ${stage.color}`}>{stage.label}</h3>
+                  <Badge variant="default">{clients.length}</Badge>
                 </div>
-                <div className="space-y-2 min-h-[200px] rounded-2xl p-2 bg-white/[0.01] border border-dashed border-white/[0.04]">
-                  {stageClients.length === 0 ? (
-                    <EmptyState icon={<Users className="h-4 w-4" />} title="Empty" className="py-6" />
-                  ) : (
-                    stageClients.map((c: any, i: number) => (
-                      <motion.div
-                        key={c.id}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.05 }}
-                        className={`rounded-xl border p-3 ${stage.bg}`}
-                      >
-                        <h4 className="text-xs font-medium text-white/70 mb-1">{c.name}</h4>
-                        <p className="text-[10px] text-white/35 line-clamp-2">{c.content}</p>
-                      </motion.div>
-                    ))
-                  )}
-                </div>
+                <StaggerGrid className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {clients.map((c, i) => (
+                    <StaggerItem key={c.id}>
+                      <Card className={`p-4 border ${stage.bg}`}>
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h4 className="text-sm font-medium text-white/80">{c.name}</h4>
+                            <p className="text-[10px] text-white/30">{c.source}</p>
+                          </div>
+                          <Badge variant={c.serviceLevel === "vip_litigation" ? "purple" : "info"}>
+                            {c.serviceLevelLabel}
+                          </Badge>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 my-3 text-[10px]">
+                          <div><span className="text-white/25">Phone:</span> <span className="text-white/50">{c.phone}</span></div>
+                          <div><span className="text-white/25">Price:</span> <span className="text-amber-400/70 font-medium">{formatCurrency(c.price)}</span></div>
+                          <div><span className="text-white/25">Partner:</span> <span className={c.assignedPartner === "Kim" ? "text-pink-400/70" : c.assignedPartner === "Victor" ? "text-purple-400/70" : "text-white/30"}>{c.assignedPartner}</span></div>
+                          <div><span className="text-white/25">Last:</span> <span className="text-white/40">{c.lastInteraction}</span></div>
+                        </div>
+
+                        {c.onboardingProgress > 0 && c.onboardingProgress < 100 && (
+                          <div className="mb-2">
+                            <div className="flex justify-between text-[9px] text-white/25 mb-0.5">
+                              <span>Onboarding</span><span>{c.onboardingProgress}%</span>
+                            </div>
+                            <div className="h-1 rounded-full bg-white/[0.04]">
+                              <div className="h-full rounded-full bg-orange-400/60" style={{ width: `${c.onboardingProgress}%` }} />
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/[0.04]">
+                          <p className="text-[10px] text-white/35 flex-1">→ {c.nextAction}</p>
+                          {c.telegramGroup && (
+                            <a href={c.telegramGroup} target="_blank" rel="noreferrer" className="text-blue-400/50 hover:text-blue-400">
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          )}
+                        </div>
+                      </Card>
+                    </StaggerItem>
+                  ))}
+                </StaggerGrid>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {activeTab === "channels" && (
+        <div className="space-y-6">
+          <StaggerGrid className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {CHANNELS.map((ch) => (
+              <StaggerItem key={ch.name}>
+                <Card className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="h-8 w-8 rounded-xl bg-white/[0.04] flex items-center justify-center">
+                        <ch.icon className={`h-4 w-4 ${ch.color}`} />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-white/80">{ch.name}</h3>
+                        <p className="text-[10px] text-white/30">{ch.description}</p>
+                      </div>
+                    </div>
+                    <Badge variant={ch.status === "connected" ? "success" : "default"}>{ch.status}</Badge>
+                  </div>
+                  <p className="text-[10px] text-white/40">{ch.detail}</p>
+                </Card>
+              </StaggerItem>
+            ))}
+          </StaggerGrid>
+
+          {/* IG Pages */}
+          <div>
+            <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider mb-3">Instagram Pages</h3>
+            <StaggerGrid className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {IG_PAGES.map((page) => (
+                <StaggerItem key={page.name}>
+                  <Card className="p-4">
+                    <h4 className="text-sm font-medium text-pink-400 mb-2">{page.name}</h4>
+                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                      <div><span className="text-white/25">Followers:</span> <span className="text-white/60">{page.followers.toLocaleString()}</span></div>
+                      <div><span className="text-white/25">Posts:</span> <span className="text-white/60">{page.posts}</span></div>
+                      <div><span className="text-white/25">Engagement:</span> <span className="text-emerald-400/70">{page.engagement}</span></div>
+                      <div><span className="text-white/25">Leads/wk:</span> <span className="text-amber-400/70">{page.leads}</span></div>
+                    </div>
+                  </Card>
+                </StaggerItem>
+              ))}
+            </StaggerGrid>
+          </div>
         </div>
       )}
     </PageTransition>

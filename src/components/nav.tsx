@@ -5,18 +5,18 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Settings2, Bot, MessageSquare,
-  FileText, Radio, BookOpen, Code2
+  FileText, Users, BookOpen, Wrench
 } from "lucide-react";
 
 const items = [
   { href: "/", label: "Home", icon: LayoutDashboard },
-  { href: "/ops", label: "Ops", icon: Settings2 },
+  { href: "/ops", label: "Pipeline", icon: Settings2 },
   { href: "/agents", label: "Agents", icon: Bot },
   { href: "/chat", label: "Chat", icon: MessageSquare },
   { href: "/content", label: "Content", icon: FileText },
-  { href: "/comms", label: "Comms", icon: Radio },
+  { href: "/comms", label: "Clients", icon: Users },
   { href: "/knowledge", label: "Knowledge", icon: BookOpen },
-  { href: "/code", label: "Code", icon: Code2 },
+  { href: "/code", label: "Tools", icon: Wrench },
 ];
 
 export function Nav() {
@@ -27,9 +27,9 @@ export function Nav() {
       <div className="mx-auto flex h-12 max-w-[1440px] items-center px-3 gap-1">
         <Link href="/" className="mr-3 flex items-center gap-2 shrink-0">
           <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center">
-            <span className="text-[10px] font-bold text-white">OC</span>
+            <span className="text-[10px] font-bold text-white">CR</span>
           </div>
-          <span className="text-xs font-semibold text-white/80 hidden sm:block">MISSION CTRL</span>
+          <span className="text-xs font-semibold text-white/80 hidden sm:block">CREDIT REPAIR HQ</span>
         </Link>
         <nav className="flex items-center gap-0.5 overflow-x-auto scrollbar-none flex-1">
           {items.map(({ href, label, icon: Icon }) => {
@@ -59,7 +59,7 @@ export function Nav() {
         <div className="flex items-center gap-2 shrink-0 ml-2">
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-emerald-500/[0.08] border border-emerald-500/[0.12]">
             <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[10px] font-medium text-emerald-400 tracking-wider">AUTO 15S</span>
+            <span className="text-[10px] font-medium text-emerald-400 tracking-wider">LIVE</span>
           </div>
         </div>
       </div>
