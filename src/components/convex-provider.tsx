@@ -3,17 +3,22 @@
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { ReactNode, useMemo } from "react";
 
-const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
-
 export function ConvexClientProvider({ children }: { children: ReactNode }) {
   const client = useMemo(() => {
-    if (!convexUrl) return null;
-    return new ConvexReactClient(convexUrl);
+    const url = process.env.NEXT_PUBLIC_CONVEX_URL;
+    if (!url) {
+      console.warn("NEXT_PUBLIC_CONVEX_URL not set — Convex disabled");
+      return null;
+    }
+    try {
+      return new ConvexReactClient(url);
+    } catch (e) {
+      console.error("Failed to create Convex client:", e);
+      return null;
+    }
   }, []);
 
   if (!client) {
-    // Render children without Convex — pages will see undefined from useQuery
-    // and show their loading states
     return <>{children}</>;
   }
 
