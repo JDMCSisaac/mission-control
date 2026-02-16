@@ -25,6 +25,8 @@ export const addApplication = mutation({
     product: v.string(),
     amountRequested: v.number(),
     dateSubmitted: v.string(),
+    bureau: v.optional(v.union(v.literal("experian"), v.literal("equifax"), v.literal("transunion"))),
+    notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const appId = await ctx.db.insert("applications", {
@@ -85,6 +87,40 @@ export const updateApplicationStatus = mutation({
       await ctx.db.patch(app.fundingClientId, {
         approvedSoFar: totalApproved,
         cardsApproved,
+      });
+    }
+  },
+});
+
+export const deleteApplication = mutation({
+  args: { id: v.id("applications") },
+  handler: async (ctx, args) => {
+    const app = await ctx.db.get(args.id);
+    if (!app) return;
+
+    await ctx.db.delete(args.id);
+
+    // Recalculate funding client totals
+    const client = await ctx.db.get(app.fundingClientId);
+    if (client) {
+      const remaining = await ctx.db
+        .query("applications")
+        .withIndex("by_fundingClient", (q) => q.eq("fundingClientId", app.fundingClientId))
+        .collect();
+
+      let totalApproved = 0;
+      let cardsApproved = 0;
+      for (const a of remaining) {
+        if (a.status === "approved") {
+          totalApproved += a.amountApproved;
+          cardsApproved++;
+        }
+      }
+
+      await ctx.db.patch(app.fundingClientId, {
+        approvedSoFar: totalApproved,
+        cardsApproved,
+        totalApps: remaining.length,
       });
     }
   },

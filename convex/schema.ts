@@ -43,6 +43,8 @@ export default defineSchema({
     amountApproved: v.number(),
     status: v.union(v.literal("pending"), v.literal("approved"), v.literal("denied")),
     dateSubmitted: v.string(),
+    bureau: v.optional(v.union(v.literal("experian"), v.literal("equifax"), v.literal("transunion"))),
+    notes: v.optional(v.string()),
   }).index("by_fundingClient", ["fundingClientId"]),
 
   tasks: defineTable({
@@ -53,6 +55,17 @@ export default defineSchema({
     nextAction: v.string(),
     status: v.string(),
   }),
+
+  revenue: defineTable({
+    amount: v.number(),
+    type: v.union(v.literal("credit-repair"), v.literal("funding")),
+    serviceLevel: v.optional(v.string()),
+    clientId: v.optional(v.string()),
+    clientName: v.optional(v.string()),
+    date: v.string(),
+    notes: v.string(),
+    createdAt: v.number(),
+  }).index("by_date", ["date"]),
 
   activity: defineTable({
     text: v.string(),
@@ -65,5 +78,7 @@ export default defineSchema({
     stage: v.string(),
     page: v.string(),
     type: v.string(),
+    platform: v.optional(v.string()),
+    body: v.optional(v.string()),
   }),
 });

@@ -33,69 +33,68 @@ const FUNDING_CLIENTS_DATA = [
   { name: "Monica Harris", businessName: "Harris Event Planning", creditScoreRange: "740-760", targetFunding: 70000, approvedSoFar: 70000, stage: "complete", cardsApproved: 5, totalApps: 5, source: "Referral - Lisa T.", createdAt: "2025-09-20", lastInteraction: "2w ago", notes: "100% success rate. Perfect case study." },
 ];
 
-// Applications data keyed by funding client name for linking
-const APPLICATIONS_DATA: Record<string, Array<{ bank: string; product: string; amountRequested: number; amountApproved: number; status: "pending" | "approved" | "denied"; dateSubmitted: string }>> = {
+const APPLICATIONS_DATA: Record<string, Array<{ bank: string; product: string; amountRequested: number; amountApproved: number; status: "pending" | "approved" | "denied"; dateSubmitted: string; bureau?: "experian" | "equifax" | "transunion" }>> = {
   "Marcus Johnson": [
-    { bank: "American Express", product: "Amex Blue Business Plus", amountRequested: 25000, amountApproved: 25000, status: "approved", dateSubmitted: "2026-01-20" },
-    { bank: "Chase", product: "Chase Ink Business Unlimited", amountRequested: 20000, amountApproved: 15000, status: "approved", dateSubmitted: "2026-01-22" },
-    { bank: "Capital One", product: "Spark Cash Plus", amountRequested: 15000, amountApproved: 12000, status: "approved", dateSubmitted: "2026-01-25" },
-    { bank: "US Bank", product: "Business Triple Cash", amountRequested: 15000, amountApproved: 10000, status: "approved", dateSubmitted: "2026-01-28" },
-    { bank: "Wells Fargo", product: "Signify Business Cash", amountRequested: 10000, amountApproved: 0, status: "pending", dateSubmitted: "2026-02-05" },
-    { bank: "Citi", product: "Costco Business Visa", amountRequested: 10000, amountApproved: 0, status: "pending", dateSubmitted: "2026-02-08" },
+    { bank: "American Express", product: "Amex Blue Business Plus", amountRequested: 25000, amountApproved: 25000, status: "approved", dateSubmitted: "2026-01-20", bureau: "experian" },
+    { bank: "Chase", product: "Chase Ink Business Unlimited", amountRequested: 20000, amountApproved: 15000, status: "approved", dateSubmitted: "2026-01-22", bureau: "experian" },
+    { bank: "Capital One", product: "Spark Cash Plus", amountRequested: 15000, amountApproved: 12000, status: "approved", dateSubmitted: "2026-01-25", bureau: "transunion" },
+    { bank: "US Bank", product: "Business Triple Cash", amountRequested: 15000, amountApproved: 10000, status: "approved", dateSubmitted: "2026-01-28", bureau: "experian" },
+    { bank: "Wells Fargo", product: "Signify Business Cash", amountRequested: 10000, amountApproved: 0, status: "pending", dateSubmitted: "2026-02-05", bureau: "equifax" },
+    { bank: "Citi", product: "Costco Business Visa", amountRequested: 10000, amountApproved: 0, status: "pending", dateSubmitted: "2026-02-08", bureau: "equifax" },
   ],
   "Sarah Mitchell": [
-    { bank: "American Express", product: "Business Gold Card", amountRequested: 30000, amountApproved: 30000, status: "approved", dateSubmitted: "2025-12-28" },
-    { bank: "Chase", product: "Ink Business Preferred", amountRequested: 25000, amountApproved: 20000, status: "approved", dateSubmitted: "2026-01-02" },
-    { bank: "Capital One", product: "Spark Miles", amountRequested: 15000, amountApproved: 12000, status: "approved", dateSubmitted: "2026-01-05" },
-    { bank: "Bank of America", product: "Business Advantage Cash", amountRequested: 15000, amountApproved: 10000, status: "approved", dateSubmitted: "2026-01-08" },
-    { bank: "Discover", product: "Business Card", amountRequested: 10000, amountApproved: 10000, status: "approved", dateSubmitted: "2026-01-12" },
-    { bank: "Wells Fargo", product: "Active Cash Business", amountRequested: 10000, amountApproved: 0, status: "denied", dateSubmitted: "2026-01-15" },
+    { bank: "American Express", product: "Business Gold Card", amountRequested: 30000, amountApproved: 30000, status: "approved", dateSubmitted: "2025-12-28", bureau: "experian" },
+    { bank: "Chase", product: "Ink Business Preferred", amountRequested: 25000, amountApproved: 20000, status: "approved", dateSubmitted: "2026-01-02", bureau: "experian" },
+    { bank: "Capital One", product: "Spark Miles", amountRequested: 15000, amountApproved: 12000, status: "approved", dateSubmitted: "2026-01-05", bureau: "transunion" },
+    { bank: "Bank of America", product: "Business Advantage Cash", amountRequested: 15000, amountApproved: 10000, status: "approved", dateSubmitted: "2026-01-08", bureau: "equifax" },
+    { bank: "Discover", product: "Business Card", amountRequested: 10000, amountApproved: 10000, status: "approved", dateSubmitted: "2026-01-12", bureau: "transunion" },
+    { bank: "Wells Fargo", product: "Active Cash Business", amountRequested: 10000, amountApproved: 0, status: "denied", dateSubmitted: "2026-01-15", bureau: "experian" },
   ],
   "David Chen": [
-    { bank: "American Express", product: "Blue Business Cash", amountRequested: 20000, amountApproved: 20000, status: "approved", dateSubmitted: "2025-11-15" },
-    { bank: "Chase", product: "Ink Business Cash", amountRequested: 15000, amountApproved: 12500, status: "approved", dateSubmitted: "2025-11-18" },
-    { bank: "Capital One", product: "Spark Cash Plus", amountRequested: 10000, amountApproved: 10000, status: "approved", dateSubmitted: "2025-11-22" },
-    { bank: "Citi", product: "Custom Cash", amountRequested: 5000, amountApproved: 5000, status: "approved", dateSubmitted: "2025-11-25" },
-    { bank: "US Bank", product: "Business Cash", amountRequested: 10000, amountApproved: 0, status: "denied", dateSubmitted: "2025-11-28" },
+    { bank: "American Express", product: "Blue Business Cash", amountRequested: 20000, amountApproved: 20000, status: "approved", dateSubmitted: "2025-11-15", bureau: "experian" },
+    { bank: "Chase", product: "Ink Business Cash", amountRequested: 15000, amountApproved: 12500, status: "approved", dateSubmitted: "2025-11-18", bureau: "experian" },
+    { bank: "Capital One", product: "Spark Cash Plus", amountRequested: 10000, amountApproved: 10000, status: "approved", dateSubmitted: "2025-11-22", bureau: "transunion" },
+    { bank: "Citi", product: "Custom Cash", amountRequested: 5000, amountApproved: 5000, status: "approved", dateSubmitted: "2025-11-25", bureau: "equifax" },
+    { bank: "US Bank", product: "Business Cash", amountRequested: 10000, amountApproved: 0, status: "denied", dateSubmitted: "2025-11-28", bureau: "experian" },
   ],
   "Keisha Brown": [
-    { bank: "American Express", product: "Business Platinum", amountRequested: 35000, amountApproved: 25000, status: "approved", dateSubmitted: "2026-02-01" },
-    { bank: "Chase", product: "Ink Business Preferred", amountRequested: 20000, amountApproved: 10000, status: "approved", dateSubmitted: "2026-02-03" },
-    { bank: "Capital One", product: "Spark 2% Cash Plus", amountRequested: 20000, amountApproved: 10000, status: "approved", dateSubmitted: "2026-02-05" },
-    { bank: "Bank of America", product: "Business Advantage Unlimited", amountRequested: 15000, amountApproved: 0, status: "pending", dateSubmitted: "2026-02-08" },
-    { bank: "Citi", product: "Business AA Advantage", amountRequested: 15000, amountApproved: 0, status: "pending", dateSubmitted: "2026-02-10" },
-    { bank: "US Bank", product: "Business Triple Cash", amountRequested: 10000, amountApproved: 0, status: "pending", dateSubmitted: "2026-02-11" },
-    { bank: "Wells Fargo", product: "Signify Business Cash", amountRequested: 10000, amountApproved: 0, status: "pending", dateSubmitted: "2026-02-12" },
+    { bank: "American Express", product: "Business Platinum", amountRequested: 35000, amountApproved: 25000, status: "approved", dateSubmitted: "2026-02-01", bureau: "experian" },
+    { bank: "Chase", product: "Ink Business Preferred", amountRequested: 20000, amountApproved: 10000, status: "approved", dateSubmitted: "2026-02-03", bureau: "experian" },
+    { bank: "Capital One", product: "Spark 2% Cash Plus", amountRequested: 20000, amountApproved: 10000, status: "approved", dateSubmitted: "2026-02-05", bureau: "transunion" },
+    { bank: "Bank of America", product: "Business Advantage Unlimited", amountRequested: 15000, amountApproved: 0, status: "pending", dateSubmitted: "2026-02-08", bureau: "equifax" },
+    { bank: "Citi", product: "Business AA Advantage", amountRequested: 15000, amountApproved: 0, status: "pending", dateSubmitted: "2026-02-10", bureau: "equifax" },
+    { bank: "US Bank", product: "Business Triple Cash", amountRequested: 10000, amountApproved: 0, status: "pending", dateSubmitted: "2026-02-11", bureau: "experian" },
+    { bank: "Wells Fargo", product: "Signify Business Cash", amountRequested: 10000, amountApproved: 0, status: "pending", dateSubmitted: "2026-02-12", bureau: "experian" },
   ],
   "Natasha Rivera": [
-    { bank: "American Express", product: "Business Platinum", amountRequested: 35000, amountApproved: 35000, status: "approved", dateSubmitted: "2026-01-05" },
-    { bank: "Chase", product: "Ink Business Preferred", amountRequested: 25000, amountApproved: 20000, status: "approved", dateSubmitted: "2026-01-08" },
-    { bank: "Capital One", product: "Spark Miles Select", amountRequested: 15000, amountApproved: 15000, status: "approved", dateSubmitted: "2026-01-12" },
-    { bank: "Bank of America", product: "Business Advantage Cash", amountRequested: 15000, amountApproved: 13000, status: "approved", dateSubmitted: "2026-01-15" },
-    { bank: "US Bank", product: "Business Triple Cash", amountRequested: 12000, amountApproved: 10000, status: "approved", dateSubmitted: "2026-01-20" },
-    { bank: "Citi", product: "Business AA Advantage", amountRequested: 15000, amountApproved: 0, status: "pending", dateSubmitted: "2026-02-01" },
-    { bank: "Wells Fargo", product: "Active Cash Business", amountRequested: 12000, amountApproved: 0, status: "pending", dateSubmitted: "2026-02-05" },
-    { bank: "Discover", product: "Business Card", amountRequested: 10000, amountApproved: 0, status: "pending", dateSubmitted: "2026-02-08" },
+    { bank: "American Express", product: "Business Platinum", amountRequested: 35000, amountApproved: 35000, status: "approved", dateSubmitted: "2026-01-05", bureau: "experian" },
+    { bank: "Chase", product: "Ink Business Preferred", amountRequested: 25000, amountApproved: 20000, status: "approved", dateSubmitted: "2026-01-08", bureau: "experian" },
+    { bank: "Capital One", product: "Spark Miles Select", amountRequested: 15000, amountApproved: 15000, status: "approved", dateSubmitted: "2026-01-12", bureau: "transunion" },
+    { bank: "Bank of America", product: "Business Advantage Cash", amountRequested: 15000, amountApproved: 13000, status: "approved", dateSubmitted: "2026-01-15", bureau: "equifax" },
+    { bank: "US Bank", product: "Business Triple Cash", amountRequested: 12000, amountApproved: 10000, status: "approved", dateSubmitted: "2026-01-20", bureau: "experian" },
+    { bank: "Citi", product: "Business AA Advantage", amountRequested: 15000, amountApproved: 0, status: "pending", dateSubmitted: "2026-02-01", bureau: "equifax" },
+    { bank: "Wells Fargo", product: "Active Cash Business", amountRequested: 12000, amountApproved: 0, status: "pending", dateSubmitted: "2026-02-05", bureau: "experian" },
+    { bank: "Discover", product: "Business Card", amountRequested: 10000, amountApproved: 0, status: "pending", dateSubmitted: "2026-02-08", bureau: "transunion" },
   ],
   "Diamond Jackson": [
-    { bank: "American Express", product: "Blue Business Plus", amountRequested: 20000, amountApproved: 20000, status: "approved", dateSubmitted: "2026-01-28" },
-    { bank: "Chase", product: "Ink Business Cash", amountRequested: 15000, amountApproved: 12000, status: "approved", dateSubmitted: "2026-01-30" },
-    { bank: "Capital One", product: "Spark Cash Plus", amountRequested: 10000, amountApproved: 0, status: "pending", dateSubmitted: "2026-02-05" },
-    { bank: "Bank of America", product: "Business Advantage Unlimited", amountRequested: 10000, amountApproved: 0, status: "pending", dateSubmitted: "2026-02-07" },
-    { bank: "US Bank", product: "Business Cash", amountRequested: 8000, amountApproved: 0, status: "denied", dateSubmitted: "2026-02-03" },
+    { bank: "American Express", product: "Blue Business Plus", amountRequested: 20000, amountApproved: 20000, status: "approved", dateSubmitted: "2026-01-28", bureau: "experian" },
+    { bank: "Chase", product: "Ink Business Cash", amountRequested: 15000, amountApproved: 12000, status: "approved", dateSubmitted: "2026-01-30", bureau: "experian" },
+    { bank: "Capital One", product: "Spark Cash Plus", amountRequested: 10000, amountApproved: 0, status: "pending", dateSubmitted: "2026-02-05", bureau: "transunion" },
+    { bank: "Bank of America", product: "Business Advantage Unlimited", amountRequested: 10000, amountApproved: 0, status: "pending", dateSubmitted: "2026-02-07", bureau: "equifax" },
+    { bank: "US Bank", product: "Business Cash", amountRequested: 8000, amountApproved: 0, status: "denied", dateSubmitted: "2026-02-03", bureau: "experian" },
   ],
   "Lisa Thompson": [
-    { bank: "American Express", product: "Business Gold", amountRequested: 25000, amountApproved: 25000, status: "approved", dateSubmitted: "2025-10-28" },
-    { bank: "Chase", product: "Ink Business Unlimited", amountRequested: 15000, amountApproved: 15000, status: "approved", dateSubmitted: "2025-11-01" },
-    { bank: "Capital One", product: "Spark Cash Plus", amountRequested: 10000, amountApproved: 10000, status: "approved", dateSubmitted: "2025-11-05" },
-    { bank: "Discover", product: "Business Card", amountRequested: 10000, amountApproved: 10000, status: "approved", dateSubmitted: "2025-11-08" },
+    { bank: "American Express", product: "Business Gold", amountRequested: 25000, amountApproved: 25000, status: "approved", dateSubmitted: "2025-10-28", bureau: "experian" },
+    { bank: "Chase", product: "Ink Business Unlimited", amountRequested: 15000, amountApproved: 15000, status: "approved", dateSubmitted: "2025-11-01", bureau: "experian" },
+    { bank: "Capital One", product: "Spark Cash Plus", amountRequested: 10000, amountApproved: 10000, status: "approved", dateSubmitted: "2025-11-05", bureau: "transunion" },
+    { bank: "Discover", product: "Business Card", amountRequested: 10000, amountApproved: 10000, status: "approved", dateSubmitted: "2025-11-08", bureau: "transunion" },
   ],
   "Monica Harris": [
-    { bank: "American Express", product: "Business Gold", amountRequested: 25000, amountApproved: 25000, status: "approved", dateSubmitted: "2025-10-05" },
-    { bank: "Chase", product: "Ink Business Preferred", amountRequested: 20000, amountApproved: 18000, status: "approved", dateSubmitted: "2025-10-08" },
-    { bank: "Capital One", product: "Spark Cash Plus", amountRequested: 12000, amountApproved: 12000, status: "approved", dateSubmitted: "2025-10-12" },
-    { bank: "Citi", product: "Custom Cash Business", amountRequested: 8000, amountApproved: 8000, status: "approved", dateSubmitted: "2025-10-15" },
-    { bank: "Discover", product: "Business Card", amountRequested: 7000, amountApproved: 7000, status: "approved", dateSubmitted: "2025-10-18" },
+    { bank: "American Express", product: "Business Gold", amountRequested: 25000, amountApproved: 25000, status: "approved", dateSubmitted: "2025-10-05", bureau: "experian" },
+    { bank: "Chase", product: "Ink Business Preferred", amountRequested: 20000, amountApproved: 18000, status: "approved", dateSubmitted: "2025-10-08", bureau: "experian" },
+    { bank: "Capital One", product: "Spark Cash Plus", amountRequested: 12000, amountApproved: 12000, status: "approved", dateSubmitted: "2025-10-12", bureau: "transunion" },
+    { bank: "Citi", product: "Custom Cash Business", amountRequested: 8000, amountApproved: 8000, status: "approved", dateSubmitted: "2025-10-15", bureau: "equifax" },
+    { bank: "Discover", product: "Business Card", amountRequested: 7000, amountApproved: 7000, status: "approved", dateSubmitted: "2025-10-18", bureau: "transunion" },
   ],
 };
 
@@ -126,16 +125,38 @@ const RECENT_ACTIVITY = [
 ];
 
 const CONTENT_ITEMS = [
-  { title: "Credit Score Myths Debunked (Carousel)", stage: "published", page: "@CreditKingsATL", type: "carousel" },
-  { title: "Client Testimonial — Jasmine Taylor", stage: "approved", page: "@CreditKingsATL", type: "video" },
-  { title: "5 Things Killing Your Credit Score", stage: "review", page: "@CreditFixPro", type: "reel" },
-  { title: "Before & After Score Reveal", stage: "draft", page: "@StackYourCredit", type: "reel" },
-  { title: "Why You Need a 720+ Score", stage: "published", page: "@CreditFixPro", type: "carousel" },
-  { title: "Business Credit 101", stage: "draft", page: "@StackYourCredit", type: "carousel" },
-  { title: "Credit Utilization Explained", stage: "review", page: "@CreditKingsATL", type: "infographic" },
-  { title: "How We Removed 12 Items in 90 Days", stage: "approved", page: "@CreditFixPro", type: "story" },
-  { title: "Funding Your First Business", stage: "draft", page: "@StackYourCredit", type: "carousel" },
-  { title: "DM Me for Free Consultation", stage: "published", page: "@CreditKingsATL", type: "story" },
+  { title: "Credit Score Myths Debunked (Carousel)", stage: "published", page: "@CreditKingsATL", type: "carousel", platform: "instagram" },
+  { title: "Client Testimonial — Jasmine Taylor", stage: "approved", page: "@CreditKingsATL", type: "video", platform: "instagram" },
+  { title: "5 Things Killing Your Credit Score", stage: "review", page: "@CreditFixPro", type: "reel", platform: "instagram" },
+  { title: "Before & After Score Reveal", stage: "draft", page: "@StackYourCredit", type: "reel", platform: "instagram" },
+  { title: "Why You Need a 720+ Score", stage: "published", page: "@CreditFixPro", type: "carousel", platform: "instagram" },
+  { title: "Business Credit 101", stage: "draft", page: "@StackYourCredit", type: "carousel", platform: "instagram" },
+  { title: "Credit Utilization Explained", stage: "review", page: "@CreditKingsATL", type: "infographic", platform: "instagram" },
+  { title: "How We Removed 12 Items in 90 Days", stage: "approved", page: "@CreditFixPro", type: "story", platform: "instagram" },
+  { title: "Funding Your First Business", stage: "draft", page: "@StackYourCredit", type: "carousel", platform: "tiktok" },
+  { title: "DM Me for Free Consultation", stage: "published", page: "@CreditKingsATL", type: "story", platform: "instagram" },
+];
+
+const REVENUE_ENTRIES = [
+  { amount: 1200, type: "credit-repair" as const, serviceLevel: "4_round_sweep", clientName: "Marcus Johnson", date: "2026-01-15", notes: "4 Round Sweep payment" },
+  { amount: 5500, type: "credit-repair" as const, serviceLevel: "vip_litigation", clientName: "Tasha Williams", date: "2026-01-08", notes: "VIP Litigation payment" },
+  { amount: 1000, type: "credit-repair" as const, serviceLevel: "4_round_sweep", clientName: "DeAndre Smith", date: "2026-02-10", notes: "4 Round Sweep payment — referral" },
+  { amount: 7500, type: "credit-repair" as const, serviceLevel: "vip_litigation", clientName: "Keisha Brown", date: "2025-12-20", notes: "VIP Litigation — 12 items case" },
+  { amount: 750, type: "credit-repair" as const, serviceLevel: "4_round_sweep", clientName: "Jordan Davis", date: "2026-02-13", notes: "4 Round Sweep — 2 items" },
+  { amount: 1500, type: "credit-repair" as const, serviceLevel: "4_round_sweep", clientName: "Brittany Moore", date: "2025-11-15", notes: "4 Round Sweep payment" },
+  { amount: 1000, type: "credit-repair" as const, serviceLevel: "4_round_sweep", clientName: "Jasmine Taylor", date: "2025-09-01", notes: "Complete case — 540 to 712" },
+  { amount: 6000, type: "credit-repair" as const, serviceLevel: "vip_litigation", clientName: "Robert Lee", date: "2026-01-02", notes: "VIP Litigation — CFPB case" },
+  { amount: 1200, type: "credit-repair" as const, serviceLevel: "4_round_sweep", clientName: "Chris Thompson", date: "2026-01-10", notes: "4 Round Sweep payment" },
+  { amount: 3500, type: "credit-repair" as const, serviceLevel: "vip_litigation", clientName: "Monica Harris", date: "2026-02-09", notes: "VIP Litigation — HIPAA angle" },
+  { amount: 5000, type: "credit-repair" as const, serviceLevel: "vip_litigation", clientName: "Diamond Foster", date: "2025-08-15", notes: "VIP Litigation — won against Cavalry SPV" },
+  { amount: 6200, type: "funding" as const, clientName: "Marcus Johnson", date: "2026-01-20", notes: "10% fee on $62K approved" },
+  { amount: 8200, type: "funding" as const, clientName: "Sarah Mitchell", date: "2026-01-15", notes: "10% fee on $82K approved" },
+  { amount: 4750, type: "funding" as const, clientName: "David Chen", date: "2025-11-28", notes: "10% fee on $47.5K approved" },
+  { amount: 4500, type: "funding" as const, clientName: "Keisha Brown", date: "2026-02-05", notes: "10% fee on $45K approved so far" },
+  { amount: 6000, type: "funding" as const, clientName: "Lisa Thompson", date: "2025-11-08", notes: "10% fee on $60K approved" },
+  { amount: 9300, type: "funding" as const, clientName: "Natasha Rivera", date: "2026-01-20", notes: "10% fee on $93K approved" },
+  { amount: 3200, type: "funding" as const, clientName: "Diamond Jackson", date: "2026-01-30", notes: "10% fee on $32K approved so far" },
+  { amount: 7000, type: "funding" as const, clientName: "Monica Harris", date: "2025-10-18", notes: "10% fee on $70K approved" },
 ];
 
 export const seedDatabase = internalMutation({
@@ -160,7 +181,13 @@ export const seedDatabase = internalMutation({
       for (const app of apps) {
         await ctx.db.insert("applications", {
           fundingClientId: fcId,
-          ...app,
+          bank: app.bank,
+          product: app.product,
+          amountRequested: app.amountRequested,
+          amountApproved: app.amountApproved,
+          status: app.status,
+          dateSubmitted: app.dateSubmitted,
+          bureau: app.bureau,
         });
       }
     }
@@ -175,13 +202,21 @@ export const seedDatabase = internalMutation({
     for (let i = 0; i < RECENT_ACTIVITY.length; i++) {
       await ctx.db.insert("activity", {
         ...RECENT_ACTIVITY[i],
-        createdAt: now - i * 3600000, // 1h apart
+        createdAt: now - i * 3600000,
       });
     }
 
     // Seed content items
     for (const item of CONTENT_ITEMS) {
       await ctx.db.insert("contentItems", item);
+    }
+
+    // Seed revenue
+    for (const entry of REVENUE_ENTRIES) {
+      await ctx.db.insert("revenue", {
+        ...entry,
+        createdAt: new Date(entry.date).getTime(),
+      });
     }
 
     console.log("Database seeded successfully!");

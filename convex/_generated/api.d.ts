@@ -18,6 +18,7 @@ import type * as applications from "../applications.js";
 import type * as clients from "../clients.js";
 import type * as contentItems from "../contentItems.js";
 import type * as fundingClients from "../fundingClients.js";
+import type * as revenue from "../revenue.js";
 import type * as seed from "../seed.js";
 import type * as tasks from "../tasks.js";
 
@@ -35,6 +36,7 @@ declare const fullApi: ApiFromModules<{
   clients: typeof clients;
   contentItems: typeof contentItems;
   fundingClients: typeof fundingClients;
+  revenue: typeof revenue;
   seed: typeof seed;
   tasks: typeof tasks;
 }>;

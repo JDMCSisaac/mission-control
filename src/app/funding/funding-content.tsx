@@ -1,25 +1,33 @@
 "use client";
+import { useState } from "react";
 import { PageTransition, StaggerGrid, StaggerItem } from "@/components/motion-wrapper";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AddFundingClientModal } from "@/components/add-funding-client-modal";
+import { EditFundingClientModal } from "@/components/edit-funding-client-modal";
+import { AddApplicationModal } from "@/components/add-application-modal";
 import {
   Users, DollarSign, TrendingUp, Target, CreditCard,
   CheckCircle2, Clock, XCircle, Banknote, BarChart3,
-  Zap, Trophy, Layers, Plus
+  Zap, Trophy, Layers, Plus, Pencil, Trash2
 } from "lucide-react";
 import { FUNDING_PIPELINE_STAGES, FUNDING_PRODUCTS } from "@/lib/funding-data";
 import { formatCurrency } from "@/lib/utils";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import type { Doc } from "../../../convex/_generated/dataModel";
 
 export default function FundingContent() {
   const stats = useQuery(api.fundingClients.getStats);
   const fundingClientsWithApps = useQuery(api.fundingClients.listWithApplications);
   const allApplications = useQuery(api.applications.listAll);
   const updateAppStatus = useMutation(api.applications.updateApplicationStatus);
+  const deleteApp = useMutation(api.applications.deleteApplication);
   const updateFundingClient = useMutation(api.fundingClients.updateFundingClient);
+  const deleteFundingClient = useMutation(api.fundingClients.deleteFundingClient);
+
+  const [editingClient, setEditingClient] = useState<Doc<"fundingClients"> | null>(null);
 
   const isLoading = !stats || !fundingClientsWithApps || !allApplications;
 
@@ -68,11 +76,18 @@ export default function FundingContent() {
               <p className="text-xs text-white/30">Credit card stacking &amp; business funding · Jake&apos;s Capital Division</p>
             </div>
           </div>
-          <AddFundingClientModal>
-            <Button variant="primary" size="sm">
-              <Plus className="h-3 w-3 mr-1" /> Add Client
-            </Button>
-          </AddFundingClientModal>
+          <div className="flex items-center gap-2">
+            <AddApplicationModal>
+              <Button variant="default" size="sm">
+                <CreditCard className="h-3 w-3 mr-1" /> Add App
+              </Button>
+            </AddApplicationModal>
+            <AddFundingClientModal>
+              <Button variant="primary" size="sm">
+                <Plus className="h-3 w-3 mr-1" /> Add Client
+              </Button>
+            </AddFundingClientModal>
+          </div>
         </div>
       </div>
 
@@ -129,14 +144,30 @@ export default function FundingContent() {
                         {clients.length > 0 && (
                           <div className="ml-36 mb-2 space-y-1.5">
                             {clients.map(client => (
-                              <div key={client._id} className={`p-2.5 rounded-xl border ${stage.bg} transition-all hover:border-white/[0.12] group`}>
+                              <div key={client._id} className={`p-2.5 rounded-xl border ${stage.bg} transition-all hover:border-white/[0.12] group cursor-pointer`} onClick={() => setEditingClient(client)}>
                                 <div className="flex items-center justify-between mb-1">
                                   <div className="flex items-center gap-2">
                                     <span className="text-xs font-medium text-white/70">{client.name}</span>
                                     <span className="text-[10px] text-white/30">·</span>
                                     <span className="text-[10px] text-white/40">{client.businessName}</span>
                                   </div>
-                                  <span className="text-[10px] text-white/30">{client.creditScoreRange}</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[10px] text-white/30">{client.creditScoreRange}</span>
+                                    {/* Bureau pull counts */}
+                                    {"bureauCounts" in client && (
+                                      <div className="flex items-center gap-1 text-[8px]">
+                                        <span className="px-1 py-0.5 rounded bg-red-500/10 text-red-400/60" title="Experian">EX:{(client as { bureauCounts: { experian: number; equifax: number; transunion: number } }).bureauCounts.experian}</span>
+                                        <span className="px-1 py-0.5 rounded bg-blue-500/10 text-blue-400/60" title="Equifax">EQ:{(client as { bureauCounts: { experian: number; equifax: number; transunion: number } }).bureauCounts.equifax}</span>
+                                        <span className="px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-400/60" title="TransUnion">TU:{(client as { bureauCounts: { experian: number; equifax: number; transunion: number } }).bureauCounts.transunion}</span>
+                                      </div>
+                                    )}
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); if (confirm(`Delete ${client.name}?`)) deleteFundingClient({ id: client._id }); }}
+                                      className="opacity-0 group-hover:opacity-100 transition-opacity text-white/20 hover:text-red-400"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </button>
+                                  </div>
                                 </div>
                                 <div className="flex items-center gap-3">
                                   <div className="flex-1">
@@ -149,7 +180,7 @@ export default function FundingContent() {
                                     </div>
                                   </div>
                                 </div>
-                                <div className="mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
                                   <select value={client.stage} onChange={e => updateFundingClient({ id: client._id, stage: e.target.value })} className="w-full text-[9px] rounded-lg bg-white/[0.06] border border-white/[0.1] px-1.5 py-0.5 text-white/50 focus:outline-none">
                                     {FUNDING_PIPELINE_STAGES.map(s => (<option key={s.id} value={s.id} className="bg-[#0a0a0f]">{s.label}</option>))}
                                   </select>
@@ -183,6 +214,7 @@ export default function FundingContent() {
                         <th className="text-[10px] text-white/30 uppercase tracking-wider text-left py-2 px-2">Client</th>
                         <th className="text-[10px] text-white/30 uppercase tracking-wider text-left py-2 px-2">Bank / Product</th>
                         <th className="text-[10px] text-white/30 uppercase tracking-wider text-right py-2 px-2">Requested</th>
+                        <th className="text-[10px] text-white/30 uppercase tracking-wider text-center py-2 px-2">Bureau</th>
                         <th className="text-[10px] text-white/30 uppercase tracking-wider text-center py-2 px-2">Status</th>
                         <th className="text-[10px] text-white/30 uppercase tracking-wider text-right py-2 px-2">Date</th>
                         <th className="text-[10px] text-white/30 uppercase tracking-wider text-center py-2 px-2">Actions</th>
@@ -194,12 +226,14 @@ export default function FundingContent() {
                           <td className="text-xs text-white/60 py-2 px-2">{clientNameMap[app.fundingClientId] || "—"}</td>
                           <td className="py-2 px-2"><span className="text-xs text-white/70">{app.bank}</span><br /><span className="text-[10px] text-white/30">{app.product}</span></td>
                           <td className="text-xs text-white/60 text-right py-2 px-2">{formatCurrency(app.amountRequested)}</td>
+                          <td className="text-center py-2 px-2"><span className="text-[10px] text-white/40 uppercase">{app.bureau || "—"}</span></td>
                           <td className="text-center py-2 px-2"><span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/[0.08] border border-amber-500/[0.12] text-[10px] text-amber-400"><Clock className="h-2.5 w-2.5" /> Pending</span></td>
                           <td className="text-[10px] text-white/40 text-right py-2 px-2">{app.dateSubmitted}</td>
                           <td className="text-center py-2 px-2">
                             <div className="flex items-center gap-1 justify-center">
                               <button onClick={() => { const amount = prompt("Approved amount:", String(app.amountRequested)); if (amount !== null) { updateAppStatus({ id: app._id, status: "approved", amountApproved: Number(amount) || 0 }); } }} className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors">✓ Approve</button>
                               <button onClick={() => updateAppStatus({ id: app._id, status: "denied" })} className="text-[9px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">✗ Deny</button>
+                              <button onClick={() => { if (confirm("Delete this application?")) deleteApp({ id: app._id }); }} className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.04] text-white/30 hover:text-red-400 transition-colors">🗑</button>
                             </div>
                           </td>
                         </tr>
@@ -209,6 +243,7 @@ export default function FundingContent() {
                           <td className="text-xs text-white/60 py-2 px-2">{clientNameMap[app.fundingClientId] || "—"}</td>
                           <td className="py-2 px-2"><span className="text-xs text-white/70">{app.bank}</span><br /><span className="text-[10px] text-white/30">{app.product}</span></td>
                           <td className="text-xs text-white/60 text-right py-2 px-2">{formatCurrency(app.amountApproved)}</td>
+                          <td className="text-center py-2 px-2"><span className="text-[10px] text-white/40 uppercase">{app.bureau || "—"}</span></td>
                           <td className="text-center py-2 px-2"><span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/[0.08] border border-emerald-500/[0.12] text-[10px] text-emerald-400"><CheckCircle2 className="h-2.5 w-2.5" /> Approved</span></td>
                           <td className="text-[10px] text-white/40 text-right py-2 px-2">{app.dateSubmitted}</td>
                           <td className="text-center py-2 px-2"><span className="text-[9px] text-white/20">—</span></td>
@@ -307,6 +342,15 @@ export default function FundingContent() {
           </StaggerItem>
         </StaggerGrid>
       </div>
+
+      {/* Edit Funding Client Modal */}
+      {editingClient && (
+        <EditFundingClientModal
+          client={editingClient}
+          open={!!editingClient}
+          onOpenChange={(open) => { if (!open) setEditingClient(null); }}
+        />
+      )}
     </PageTransition>
   );
 }

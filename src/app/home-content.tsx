@@ -2,10 +2,13 @@
 import { PageTransition, StaggerGrid, StaggerItem } from "@/components/motion-wrapper";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { AddClientModal } from "@/components/add-client-modal";
+import { LogRevenueModal } from "@/components/log-revenue-modal";
 import Link from "next/link";
 import {
   Users, UserPlus, DollarSign, ClipboardList,
-  Activity, TrendingUp, Target, ArrowRight, CheckCircle2, Banknote
+  Activity, TrendingUp, Target, ArrowRight, CheckCircle2, Banknote, Plus
 } from "lucide-react";
 import { PIPELINE_STAGES } from "@/lib/credit-repair-data";
 import { formatCurrency } from "@/lib/utils";
@@ -17,6 +20,8 @@ export default function HomeContent() {
   const fundingStats = useQuery(api.fundingClients.getStats);
   const clients = useQuery(api.clients.list);
   const activityItems = useQuery(api.activity.list);
+  const revenueStats = useQuery(api.revenue.getStats);
+  const revenueEntries = useQuery(api.revenue.list);
 
   if (!stats || !fundingStats || !clients || !activityItems) {
     return (
@@ -34,11 +39,28 @@ export default function HomeContent() {
     );
   }
 
+  const totalRevenue = revenueStats?.totalRevenue ?? stats.totalRevenue;
+  const thisMonthRevenue = revenueStats?.thisMonthRevenue ?? stats.revenueThisMonth;
+
   return (
     <PageTransition>
-      <div className="mb-6">
-        <h1 className="text-lg font-semibold text-white/90">Credit Repair Command Center</h1>
-        <p className="text-xs text-white/30 mt-0.5">Business overview · Jake&apos;s Credit Repair</p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-lg font-semibold text-white/90">Credit Repair Command Center</h1>
+          <p className="text-xs text-white/30 mt-0.5">Business overview · Jake&apos;s Credit Repair</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <AddClientModal>
+            <Button variant="primary" size="sm">
+              <Plus className="h-3 w-3 mr-1" /> Add Client
+            </Button>
+          </AddClientModal>
+          <LogRevenueModal>
+            <Button variant="success" size="sm">
+              <DollarSign className="h-3 w-3 mr-1" /> Log Revenue
+            </Button>
+          </LogRevenueModal>
+        </div>
       </div>
 
       {/* Top Stats */}
@@ -46,7 +68,7 @@ export default function HomeContent() {
         {[
           { label: "Active Clients", value: stats.activeClients, icon: Users, color: "text-blue-400" },
           { label: "New Leads", value: stats.newLeadsThisWeek, icon: UserPlus, color: "text-emerald-400" },
-          { label: "Revenue (Month)", value: formatCurrency(stats.revenueThisMonth), icon: DollarSign, color: "text-amber-400" },
+          { label: "Revenue (Month)", value: formatCurrency(thisMonthRevenue), icon: DollarSign, color: "text-amber-400" },
           { label: "Pending Onboarding", value: stats.pendingOnboarding, icon: ClipboardList, color: "text-orange-400" },
         ].map((stat) => (
           <StaggerItem key={stat.label}>
@@ -122,7 +144,7 @@ export default function HomeContent() {
 
         {/* Right Column */}
         <StaggerGrid className="space-y-4">
-          {/* Dispute Status */}
+          {/* Team Workload */}
           <StaggerItem>
             <Card>
               <CardHeader><CardTitle className="flex items-center gap-2"><ClipboardList className="h-3.5 w-3.5 text-pink-400" />Team Workload</CardTitle></CardHeader>
@@ -150,30 +172,54 @@ export default function HomeContent() {
           {/* Revenue Breakdown */}
           <StaggerItem>
             <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2"><TrendingUp className="h-3.5 w-3.5 text-amber-400" />Revenue</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-3.5 w-3.5 text-amber-400" />
+                  Revenue
+                  <LogRevenueModal>
+                    <button className="ml-auto text-[10px] px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors">+ Log</button>
+                  </LogRevenueModal>
+                </CardTitle>
+              </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between py-1">
-                    <span className="text-xs text-white/40">L1 (4 Round Sweep)</span>
-                    <span className="text-xs font-medium text-white/70">{formatCurrency(stats.l1.revenue)}</span>
+                    <span className="text-xs text-white/40">Credit Repair</span>
+                    <span className="text-xs font-medium text-white/70">{formatCurrency(revenueStats?.creditRepairRevenue ?? stats.l1.revenue + stats.l2.revenue)}</span>
                   </div>
                   <div className="flex items-center justify-between py-1">
-                    <span className="text-xs text-white/40">L2 (VIP Litigation)</span>
-                    <span className="text-xs font-medium text-white/70">{formatCurrency(stats.l2.revenue)}</span>
+                    <span className="text-xs text-white/40">Funding</span>
+                    <span className="text-xs font-medium text-white/70">{formatCurrency(revenueStats?.fundingRevenue ?? 0)}</span>
                   </div>
                   <div className="border-t border-white/[0.06] pt-2 flex items-center justify-between">
                     <span className="text-xs text-white/50 font-medium">Total</span>
-                    <span className="text-sm font-semibold text-amber-400">{formatCurrency(stats.totalRevenue)}</span>
+                    <span className="text-sm font-semibold text-amber-400">{formatCurrency(totalRevenue)}</span>
                   </div>
                   <div className="mt-2">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[10px] text-white/30">Goal: {formatCurrency(stats.revenueGoal)}</span>
-                      <span className="text-[10px] text-white/30">{Math.round((stats.totalRevenue / stats.revenueGoal) * 100)}%</span>
+                      <span className="text-[10px] text-white/30">{Math.round((totalRevenue / stats.revenueGoal) * 100)}%</span>
                     </div>
                     <div className="h-2 rounded-full bg-white/[0.04] overflow-hidden">
-                      <div className="h-full rounded-full bg-gradient-to-r from-amber-500 to-amber-400" style={{ width: `${Math.min((stats.totalRevenue / stats.revenueGoal) * 100, 100)}%` }} />
+                      <div className="h-full rounded-full bg-gradient-to-r from-amber-500 to-amber-400" style={{ width: `${Math.min((totalRevenue / stats.revenueGoal) * 100, 100)}%` }} />
                     </div>
                   </div>
+
+                  {/* Recent revenue entries */}
+                  {revenueEntries && revenueEntries.length > 0 && (
+                    <div className="mt-3 space-y-1.5 border-t border-white/[0.06] pt-3">
+                      <p className="text-[10px] text-white/25 uppercase tracking-wider mb-2">Recent Entries</p>
+                      {revenueEntries.slice(0, 5).map(entry => (
+                        <div key={entry._id} className="flex items-center justify-between text-[10px] py-1">
+                          <div className="flex items-center gap-2">
+                            <div className={`h-1.5 w-1.5 rounded-full ${entry.type === "credit-repair" ? "bg-blue-400" : "bg-emerald-400"}`} />
+                            <span className="text-white/50">{entry.clientName || entry.type}</span>
+                          </div>
+                          <span className="text-white/60 font-medium">{formatCurrency(entry.amount)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -8,14 +8,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { AddTaskModal } from "@/components/add-task-modal";
+import { AddClientModal } from "@/components/add-client-modal";
+import { EditClientModal } from "@/components/edit-client-modal";
 import { motion } from "framer-motion";
 import {
-  Activity, ListTodo, Calendar, ChevronRight, Users, Plus
+  Activity, ListTodo, Calendar, ChevronRight, Users, Plus, Pencil, Trash2
 } from "lucide-react";
 import { PIPELINE_STAGES } from "@/lib/credit-repair-data";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import type { Id } from "../../../convex/_generated/dataModel";
+import type { Doc } from "../../../convex/_generated/dataModel";
 
 const tabs = [
   { id: "operations", label: "Pipeline", icon: <Activity className="h-3 w-3" /> },
@@ -42,7 +44,11 @@ export function OpsContent() {
   const clients = useQuery(api.clients.list);
   const tasks = useQuery(api.tasks.list);
   const updateTaskStatus = useMutation(api.tasks.updateTaskStatus);
+  const deleteTask = useMutation(api.tasks.deleteTask);
   const moveStage = useMutation(api.clients.moveStage);
+  const deleteClient = useMutation(api.clients.deleteClient);
+
+  const [editingClient, setEditingClient] = useState<Doc<"clients"> | null>(null);
 
   const isLoading = !clients || !tasks;
 
@@ -53,7 +59,16 @@ export function OpsContent() {
           <h1 className="text-lg font-semibold text-white/90">Pipeline & Operations</h1>
           <p className="text-xs text-white/30 mt-0.5">Client pipeline, tasks & scheduling</p>
         </div>
-        <TabBar tabs={tabs} layoutId="ops-tab" />
+        <div className="flex items-center gap-2">
+          {activeTab === "operations" && (
+            <AddClientModal>
+              <Button variant="primary" size="sm">
+                <Plus className="h-3 w-3 mr-1" /> Add Client
+              </Button>
+            </AddClientModal>
+          )}
+          <TabBar tabs={tabs} layoutId="ops-tab" />
+        </div>
       </div>
 
       {activeTab === "operations" && (
@@ -86,7 +101,8 @@ export function OpsContent() {
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: i * 0.05 }}
-                          className={`rounded-xl border p-2.5 ${stage.bg} group relative`}
+                          className={`rounded-xl border p-2.5 ${stage.bg} group relative cursor-pointer`}
+                          onClick={() => setEditingClient(c)}
                         >
                           <h4 className="text-[11px] font-medium text-white/70 mb-1">{c.name}</h4>
                           <Badge variant={c.serviceLevel === "vip_litigation" ? "purple" : "info"} className="text-[8px] mb-1.5">
@@ -97,7 +113,7 @@ export function OpsContent() {
                             <p className="text-[9px] text-white/20 mt-1">→ {c.assignedPartner}</p>
                           )}
                           {/* Stage move dropdown */}
-                          <div className="mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
                             <select
                               value={c.stage}
                               onChange={e => moveStage({ id: c._id, newStage: e.target.value })}
@@ -108,6 +124,13 @@ export function OpsContent() {
                               ))}
                             </select>
                           </div>
+                          {/* Delete button */}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); if (confirm(`Delete ${c.name}?`)) deleteClient({ id: c._id }); }}
+                            className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-white/20 hover:text-red-400"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
                         </motion.div>
                       ))
                     )}
@@ -152,7 +175,15 @@ export function OpsContent() {
                             <Badge variant={t.category === "Sales" ? "warning" : t.category === "Disputes" ? "info" : t.category === "Onboarding" ? "success" : t.category === "Marketing" ? "purple" : "default"}>
                               {t.category}
                             </Badge>
-                            <Badge variant="default">{t.status}</Badge>
+                            <div className="flex items-center gap-1">
+                              <Badge variant="default">{t.status}</Badge>
+                              <button
+                                onClick={() => { if (confirm(`Delete task "${t.title}"?`)) deleteTask({ id: t._id }); }}
+                                className="text-white/20 hover:text-red-400 transition-colors ml-1"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </div>
                           </div>
                           <h4 className="text-sm font-medium text-white/80 mb-1">{t.title}</h4>
                           <p className="text-xs text-white/40 mb-1">{t.description}</p>
@@ -185,9 +216,17 @@ export function OpsContent() {
                         <Badge variant={t.category === "Sales" ? "warning" : t.category === "Disputes" ? "info" : t.category === "Onboarding" ? "success" : t.category === "Marketing" ? "purple" : "default"}>
                           {t.category}
                         </Badge>
-                        <Badge variant={t.status === "done" ? "success" : "default"}>
-                          {t.status}
-                        </Badge>
+                        <div className="flex items-center gap-1">
+                          <Badge variant={t.status === "done" ? "success" : "default"}>
+                            {t.status}
+                          </Badge>
+                          <button
+                            onClick={() => deleteTask({ id: t._id })}
+                            className="text-white/20 hover:text-red-400 transition-colors ml-1"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
                       </div>
                       <h4 className="text-sm font-medium text-white/80 mb-1 line-through">{t.title}</h4>
                       <p className="text-xs text-white/40">{t.description}</p>
@@ -231,6 +270,15 @@ export function OpsContent() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Edit Client Modal */}
+      {editingClient && (
+        <EditClientModal
+          client={editingClient}
+          open={!!editingClient}
+          onOpenChange={(open) => { if (!open) setEditingClient(null); }}
+        />
       )}
     </PageTransition>
   );

@@ -18,7 +18,16 @@ export const listWithApplications = query({
         .query("applications")
         .withIndex("by_fundingClient", (q) => q.eq("fundingClientId", client._id))
         .collect();
-      result.push({ ...client, applications });
+
+      // Compute bureau pull counts
+      const bureauCounts = { experian: 0, equifax: 0, transunion: 0 };
+      for (const app of applications) {
+        if (app.bureau) {
+          bureauCounts[app.bureau]++;
+        }
+      }
+
+      result.push({ ...client, applications, bureauCounts });
     }
     return result;
   },
@@ -118,5 +127,20 @@ export const updateFundingClient = mutation({
       }
     }
     await ctx.db.patch(id, updates);
+  },
+});
+
+export const deleteFundingClient = mutation({
+  args: { id: v.id("fundingClients") },
+  handler: async (ctx, args) => {
+    // Delete all associated applications first
+    const apps = await ctx.db
+      .query("applications")
+      .withIndex("by_fundingClient", (q) => q.eq("fundingClientId", args.id))
+      .collect();
+    for (const app of apps) {
+      await ctx.db.delete(app._id);
+    }
+    await ctx.db.delete(args.id);
   },
 });
