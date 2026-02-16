@@ -8,9 +8,14 @@
  * @module
  */
 
-import type { DataModelFromSchemaDefinition } from "convex/server";
-import type { DocumentByName, TableNamesInDataModel } from "convex/server";
-import type schema from "../schema.js";
+import type {
+  DataModelFromSchemaDefinition,
+  DocumentByName,
+  TableNamesInDataModel,
+  SystemTableNames,
+} from "convex/server";
+import type { GenericId } from "convex/values";
+import schema from "../schema.js";
 
 /**
  * The names of all of your Convex tables.
@@ -20,7 +25,7 @@ export type TableNames = TableNamesInDataModel<DataModel>;
 /**
  * The type of a document stored in Convex.
  *
- * @typeParam TableName - A string literal type of the table name.
+ * @typeParam TableName - A string literal type of the table name (like "users").
  */
 export type Doc<TableName extends TableNames> = DocumentByName<
   DataModel,
@@ -30,14 +35,18 @@ export type Doc<TableName extends TableNames> = DocumentByName<
 /**
  * An identifier for a document in Convex.
  *
- * Convex documents are uniquely identified by their automatically generated `Id`.
+ * Convex documents are uniquely identified by their `Id`, which is accessible
+ * on the `_id` field. To learn more, see [Document IDs](https://docs.convex.dev/using/document-ids).
  *
- * @typeParam TableName - A string literal type of the table name.
+ * Documents can be loaded using `db.get(tableName, id)` in query and mutation functions.
+ *
+ * IDs are just strings at runtime, but this type can be used to distinguish them from other
+ * strings when type checking.
+ *
+ * @typeParam TableName - A string literal type of the table name (like "users").
  */
-export type Id<TableName extends TableNames> = DocumentByName<
-  DataModel,
-  TableName
->["_id"];
+export type Id<TableName extends TableNames | SystemTableNames> =
+  GenericId<TableName>;
 
 /**
  * A type describing your Convex data model.
@@ -45,7 +54,7 @@ export type Id<TableName extends TableNames> = DocumentByName<
  * This type includes information about what tables you have, the type of
  * documents stored in those tables, and the indexes defined on them.
  *
- * This type is used to parameterize the other generated types to make them
- * type-safe.
+ * This type is used to parameterize methods like `queryGeneric` and
+ * `mutationGeneric` to make them type-safe.
  */
 export type DataModel = DataModelFromSchemaDefinition<typeof schema>;

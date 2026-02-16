@@ -1,12 +1,13 @@
 {
   "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "allowJs": true,
     "strict": true,
-    "moduleResolution": "Bundler",
-    "jsx": "react-jsx",
-    "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "skipLibCheck": true
   },
-  "include": ["./**/*"],
-  "exclude": ["./_generated"]
+  "include": ["./**/*.ts"],
+  "exclude": ["node_modules"]
 }
