@@ -1,11 +1,11 @@
-"use client";
 import { Suspense } from "react";
 import { OpsContent } from "./ops-content";
-import { LoadingCards } from "@/components/loading-cards";
+
+export const dynamic = "force-dynamic";
 
 export default function OpsPage() {
   return (
-    <Suspense fallback={<div className="pt-8"><LoadingCards count={6} /></div>}>
+    <Suspense fallback={<div className="pt-8 text-white/30 text-xs">Loading pipeline...</div>}>
       <OpsContent />
     </Suspense>
   );
