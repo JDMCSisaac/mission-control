@@ -10,14 +10,17 @@ import { EmptyState } from "@/components/empty-state";
 import { AddTaskModal } from "@/components/add-task-modal";
 import { AddClientModal } from "@/components/add-client-modal";
 import { EditClientModal } from "@/components/edit-client-modal";
+import { EditTaskModal } from "@/components/edit-task-modal";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { motion } from "framer-motion";
 import {
-  Activity, ListTodo, Calendar, ChevronRight, Users, Plus, Pencil, Trash2
+  Activity, ListTodo, Calendar, ChevronRight, Users, Plus, Pencil, Trash2, Check, SkipForward
 } from "lucide-react";
 import { PIPELINE_STAGES } from "@/lib/credit-repair-data";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import type { Doc } from "../../../convex/_generated/dataModel";
+import { toast } from "sonner";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
 
 const tabs = [
   { id: "operations", label: "Pipeline", icon: <Activity className="h-3 w-3" /> },
@@ -49,15 +52,51 @@ export function OpsContent() {
   const deleteClient = useMutation(api.clients.deleteClient);
 
   const [editingClient, setEditingClient] = useState<Doc<"clients"> | null>(null);
+  const [editingTask, setEditingTask] = useState<Doc<"tasks"> | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: "client" | "task"; id: string; name: string } | null>(null);
 
   const isLoading = !clients || !tasks;
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      if (deleteTarget.type === "client") {
+        await deleteClient({ id: deleteTarget.id as Id<"clients"> });
+        toast.success(`${deleteTarget.name} deleted`);
+      } else {
+        await deleteTask({ id: deleteTarget.id as Id<"tasks"> });
+        toast.success("Task deleted");
+      }
+    } catch {
+      toast.error("Failed to delete");
+    }
+    setDeleteTarget(null);
+  };
+
+  const handleTaskDone = async (id: Id<"tasks">) => {
+    try {
+      await updateTaskStatus({ id, status: "done" });
+      toast.success("Task completed! ✓");
+    } catch {
+      toast.error("Failed to update task");
+    }
+  };
+
+  const handleTaskSkip = async (id: Id<"tasks">) => {
+    try {
+      await updateTaskStatus({ id, status: "skipped" });
+      toast("Task skipped");
+    } catch {
+      toast.error("Failed to update task");
+    }
+  };
+
   return (
     <PageTransition>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-lg font-semibold text-white/90">Pipeline & Operations</h1>
-          <p className="text-xs text-white/30 mt-0.5">Client pipeline, tasks & scheduling</p>
+          <h1 className="text-xl font-semibold text-white/90 tracking-tight">Pipeline & Operations</h1>
+          <p className="text-xs text-white/40 mt-1">Client pipeline, tasks & scheduling</p>
         </div>
         <div className="flex items-center gap-2">
           {activeTab === "operations" && (
@@ -66,6 +105,13 @@ export function OpsContent() {
                 <Plus className="h-3 w-3 mr-1" /> Add Client
               </Button>
             </AddClientModal>
+          )}
+          {activeTab === "tasks" && (
+            <AddTaskModal>
+              <Button variant="primary" size="sm">
+                <Plus className="h-3 w-3 mr-1" /> Add Task
+              </Button>
+            </AddTaskModal>
           )}
           <TabBar tabs={tabs} layoutId="ops-tab" />
         </div>
@@ -76,8 +122,8 @@ export function OpsContent() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 gap-2">
             {PIPELINE_STAGES.map(s => (
               <div key={s.id} className="min-w-[160px]">
-                <div className="h-6 bg-white/[0.02] rounded mb-2 animate-pulse" />
-                <div className="min-h-[200px] rounded-2xl bg-white/[0.01] border border-dashed border-white/[0.04] animate-pulse" />
+                <div className="h-6 rounded mb-2 animate-shimmer" />
+                <div className="min-h-[200px] rounded-2xl animate-shimmer" />
               </div>
             ))}
           </div>
@@ -88,8 +134,10 @@ export function OpsContent() {
               return (
                 <div key={stage.id} className="min-w-[160px]">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className={`text-[10px] font-medium uppercase tracking-wider ${stage.color}`}>{stage.label}</h3>
-                    <Badge variant="default">{stageClients.length}</Badge>
+                    <h3 className={`text-[10px] font-semibold uppercase tracking-wider ${stage.color}`}>{stage.label}</h3>
+                    <span className="h-5 min-w-[20px] px-1 flex items-center justify-center rounded-full bg-white/[0.06] text-white/40 text-[10px] font-bold">
+                      {stageClients.length}
+                    </span>
                   </div>
                   <div className="space-y-2 min-h-[200px] rounded-2xl p-1.5 bg-white/[0.01] border border-dashed border-white/[0.04]">
                     {stageClients.length === 0 ? (
@@ -101,10 +149,19 @@ export function OpsContent() {
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: i * 0.05 }}
-                          className={`rounded-xl border p-2.5 ${stage.bg} group relative cursor-pointer`}
+                          className={`rounded-xl border p-2.5 ${stage.bg} group relative cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg`}
                           onClick={() => setEditingClient(c)}
                         >
-                          <h4 className="text-[11px] font-medium text-white/70 mb-1">{c.name}</h4>
+                          <div className="flex items-center justify-between mb-1">
+                            <h4 className="text-[11px] font-medium text-white/70">{c.name}</h4>
+                            {/* Delete button - appears on hover */}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "client", id: c._id, name: c.name }); }}
+                              className="opacity-0 group-hover:opacity-100 transition-all text-white/20 hover:text-red-400 p-0.5"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
                           <Badge variant={c.serviceLevel === "vip_litigation" ? "purple" : "info"} className="text-[8px] mb-1.5">
                             {c.serviceLevel === "vip_litigation" ? "L2 VIP" : "L1 Sweep"}
                           </Badge>
@@ -113,10 +170,13 @@ export function OpsContent() {
                             <p className="text-[9px] text-white/20 mt-1">→ {c.assignedPartner}</p>
                           )}
                           {/* Stage move dropdown */}
-                          <div className="mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                          <div className="mt-1.5 opacity-0 group-hover:opacity-100 transition-all" onClick={e => e.stopPropagation()}>
                             <select
                               value={c.stage}
-                              onChange={e => moveStage({ id: c._id, newStage: e.target.value })}
+                              onChange={e => {
+                                moveStage({ id: c._id, newStage: e.target.value });
+                                toast.success(`Moved to ${PIPELINE_STAGES.find(s => s.id === e.target.value)?.label}`);
+                              }}
                               className="w-full text-[9px] rounded-lg bg-white/[0.06] border border-white/[0.1] px-1.5 py-0.5 text-white/50 focus:outline-none"
                             >
                               {PIPELINE_STAGES.map(s => (
@@ -124,13 +184,6 @@ export function OpsContent() {
                               ))}
                             </select>
                           </div>
-                          {/* Delete button */}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); if (confirm(`Delete ${c.name}?`)) deleteClient({ id: c._id }); }}
-                            className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-white/20 hover:text-red-400"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
                         </motion.div>
                       ))
                     )}
@@ -143,98 +196,105 @@ export function OpsContent() {
       )}
 
       {activeTab === "tasks" && (
-        <div className="space-y-4">
-          <div className="flex justify-end">
-            <AddTaskModal>
-              <Button variant="primary" size="sm">
-                <Plus className="h-3 w-3 mr-1" /> Add Task
-              </Button>
-            </AddTaskModal>
-          </div>
+        <div className="space-y-6">
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {[1,2,3,4].map(i => (
-                <Card key={i} className="p-4 animate-pulse"><div className="h-24 bg-white/[0.04] rounded" /></Card>
+                <Card key={i} className="p-4"><div className="h-24 rounded-lg animate-shimmer" /></Card>
               ))}
             </div>
           ) : (
-            ["high", "medium", "low"].map((priority) => {
-              const filtered = tasks.filter(t => t.priority === priority && t.status === "pending");
-              if (filtered.length === 0) return null;
-              return (
-                <div key={priority}>
-                  <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <div className={`h-1.5 w-1.5 rounded-full ${priority === "high" ? "bg-red-400" : priority === "medium" ? "bg-amber-400" : "bg-blue-400"}`} />
-                    {priority} priority
+            <>
+              {["high", "medium", "low"].map((priority) => {
+                const filtered = tasks.filter(t => t.priority === priority && t.status === "pending");
+                if (filtered.length === 0) return null;
+                return (
+                  <div key={priority}>
+                    <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <div className={`h-2 w-2 rounded-full ${priority === "high" ? "bg-red-400 animate-status-pulse" : priority === "medium" ? "bg-amber-400" : "bg-blue-400"}`} />
+                      {priority} priority
+                      <span className="text-white/20 font-normal">({filtered.length})</span>
+                    </h3>
+                    <StaggerGrid className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {filtered.map((t) => (
+                        <StaggerItem key={t._id}>
+                          <Card className="p-4 group">
+                            <div className="flex items-start justify-between mb-2">
+                              <Badge variant={t.category === "Sales" ? "warning" : t.category === "Disputes" ? "info" : t.category === "Onboarding" ? "success" : t.category === "Marketing" ? "purple" : "default"}>
+                                {t.category}
+                              </Badge>
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  onClick={() => setEditingTask(t)}
+                                  className="opacity-0 group-hover:opacity-100 text-white/20 hover:text-blue-400 transition-all p-0.5"
+                                  title="Edit"
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </button>
+                                <button
+                                  onClick={() => setDeleteTarget({ type: "task", id: t._id, name: t.title })}
+                                  className="opacity-0 group-hover:opacity-100 text-white/20 hover:text-red-400 transition-all p-0.5"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              </div>
+                            </div>
+                            <h4 className="text-sm font-medium text-white/80 mb-1">{t.title}</h4>
+                            <p className="text-xs text-white/40 mb-1">{t.description}</p>
+                            <p className="text-xs text-white/30 mb-3 flex items-center gap-1"><ChevronRight className="h-3 w-3" />{t.nextAction}</p>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="success" onClick={() => handleTaskDone(t._id)}>
+                                <Check className="h-3 w-3 mr-1" /> Done
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => handleTaskSkip(t._id)}>
+                                <SkipForward className="h-3 w-3 mr-1" /> Skip
+                              </Button>
+                            </div>
+                          </Card>
+                        </StaggerItem>
+                      ))}
+                    </StaggerGrid>
+                  </div>
+                );
+              })}
+
+              {/* Done/Skipped tasks */}
+              {tasks.filter(t => t.status !== "pending").length > 0 && (
+                <div>
+                  <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-emerald-400" />
+                    Completed / Skipped
                   </h3>
                   <StaggerGrid className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {filtered.map((t) => (
+                    {tasks.filter(t => t.status !== "pending").map((t) => (
                       <StaggerItem key={t._id}>
-                        <Card className="p-4">
+                        <Card className="p-4 opacity-40 group hover:opacity-60 transition-opacity">
                           <div className="flex items-start justify-between mb-2">
                             <Badge variant={t.category === "Sales" ? "warning" : t.category === "Disputes" ? "info" : t.category === "Onboarding" ? "success" : t.category === "Marketing" ? "purple" : "default"}>
                               {t.category}
                             </Badge>
-                            <div className="flex items-center gap-1">
-                              <Badge variant="default">{t.status}</Badge>
+                            <div className="flex items-center gap-1.5">
+                              <Badge variant={t.status === "done" ? "success" : "default"}>
+                                {t.status}
+                              </Badge>
                               <button
-                                onClick={() => { if (confirm(`Delete task "${t.title}"?`)) deleteTask({ id: t._id }); }}
-                                className="text-white/20 hover:text-red-400 transition-colors ml-1"
+                                onClick={() => setDeleteTarget({ type: "task", id: t._id, name: t.title })}
+                                className="opacity-0 group-hover:opacity-100 text-white/20 hover:text-red-400 transition-all p-0.5"
                               >
                                 <Trash2 className="h-3 w-3" />
                               </button>
                             </div>
                           </div>
-                          <h4 className="text-sm font-medium text-white/80 mb-1">{t.title}</h4>
-                          <p className="text-xs text-white/40 mb-1">{t.description}</p>
-                          <p className="text-xs text-white/30 mb-3 flex items-center gap-1"><ChevronRight className="h-3 w-3" />{t.nextAction}</p>
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="primary" onClick={() => updateTaskStatus({ id: t._id, status: "done" })}>Done</Button>
-                            <Button size="sm" variant="ghost" onClick={() => updateTaskStatus({ id: t._id, status: "skipped" })}>Skip</Button>
-                          </div>
+                          <h4 className="text-sm font-medium text-white/80 mb-1 line-through">{t.title}</h4>
+                          <p className="text-xs text-white/40">{t.description}</p>
                         </Card>
                       </StaggerItem>
                     ))}
                   </StaggerGrid>
                 </div>
-              );
-            })
-          )}
-
-          {/* Done/Skipped tasks */}
-          {tasks && tasks.filter(t => t.status !== "pending").length > 0 && (
-            <div>
-              <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider mb-3 flex items-center gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                Completed / Skipped
-              </h3>
-              <StaggerGrid className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {tasks.filter(t => t.status !== "pending").map((t) => (
-                  <StaggerItem key={t._id}>
-                    <Card className="p-4 opacity-50">
-                      <div className="flex items-start justify-between mb-2">
-                        <Badge variant={t.category === "Sales" ? "warning" : t.category === "Disputes" ? "info" : t.category === "Onboarding" ? "success" : t.category === "Marketing" ? "purple" : "default"}>
-                          {t.category}
-                        </Badge>
-                        <div className="flex items-center gap-1">
-                          <Badge variant={t.status === "done" ? "success" : "default"}>
-                            {t.status}
-                          </Badge>
-                          <button
-                            onClick={() => deleteTask({ id: t._id })}
-                            className="text-white/20 hover:text-red-400 transition-colors ml-1"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </div>
-                      </div>
-                      <h4 className="text-sm font-medium text-white/80 mb-1 line-through">{t.title}</h4>
-                      <p className="text-xs text-white/40">{t.description}</p>
-                    </Card>
-                  </StaggerItem>
-                ))}
-              </StaggerGrid>
-            </div>
+              )}
+            </>
           )}
         </div>
       )}
@@ -272,14 +332,21 @@ export function OpsContent() {
         </Card>
       )}
 
-      {/* Edit Client Modal */}
+      {/* Modals */}
       {editingClient && (
-        <EditClientModal
-          client={editingClient}
-          open={!!editingClient}
-          onOpenChange={(open) => { if (!open) setEditingClient(null); }}
-        />
+        <EditClientModal client={editingClient} open={!!editingClient} onOpenChange={(open) => { if (!open) setEditingClient(null); }} />
       )}
+      {editingTask && (
+        <EditTaskModal task={editingTask} open={!!editingTask} onOpenChange={(open) => { if (!open) setEditingTask(null); }} />
+      )}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={() => setDeleteTarget(null)}
+        title={`Delete ${deleteTarget?.type === "client" ? "Client" : "Task"}?`}
+        description="This action cannot be undone."
+        itemName={deleteTarget?.name}
+        onConfirm={handleDelete}
+      />
     </PageTransition>
   );
 }

@@ -6,13 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/empty-state";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { motion } from "framer-motion";
 import { FileText, Plus, X, ChevronRight, ChevronLeft, Pencil, Trash2 } from "lucide-react";
 import { IG_PAGES } from "@/lib/credit-repair-data";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import * as Dialog from "@radix-ui/react-dialog";
-import type { Doc } from "../../../convex/_generated/dataModel";
+import { toast } from "sonner";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
 
 const STAGES = [
   { id: "draft", label: "Draft", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
@@ -35,65 +37,70 @@ function AddContentModal({ children }: { children: React.ReactNode }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    await addContentItem({
-      title: title.trim(),
-      stage: "draft",
-      page: platform === "instagram" ? page : platform,
-      type,
-      platform,
-      body: body.trim() || undefined,
-    });
-    setOpen(false);
-    setTitle(""); setType("carousel"); setPlatform("instagram"); setBody("");
+    try {
+      await addContentItem({
+        title: title.trim(),
+        stage: "draft",
+        page: platform === "instagram" ? page : platform,
+        type,
+        platform,
+        body: body.trim() || undefined,
+      });
+      toast.success("Content added");
+      setOpen(false);
+      setTitle(""); setType("carousel"); setPlatform("instagram"); setBody("");
+    } catch {
+      toast.error("Failed to add content");
+    }
   };
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild>{children}</Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md rounded-2xl bg-[#0a0a0f] border border-white/[0.08] p-6 shadow-2xl">
+        <Dialog.Overlay className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md rounded-2xl bg-[#0c0c12] border border-white/[0.08] p-6 shadow-2xl">
           <div className="flex items-center justify-between mb-5">
-            <Dialog.Title className="text-sm font-semibold text-white/80">Add Content</Dialog.Title>
+            <Dialog.Title className="text-base font-semibold text-white/90">Add Content</Dialog.Title>
             <Dialog.Close asChild><button className="text-white/30 hover:text-white/60 transition-colors"><X className="h-4 w-4" /></button></Dialog.Close>
           </div>
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1 block">Title *</label>
+              <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1.5 block font-medium">Title *</label>
               <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Content title" required />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1 block">Platform</label>
-                <select value={platform} onChange={e => setPlatform(e.target.value)} className="flex h-9 w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-1 text-sm text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20">
+                <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1.5 block font-medium">Platform</label>
+                <select value={platform} onChange={e => setPlatform(e.target.value)} className="flex h-9 w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-1 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30">
                   {PLATFORMS.map(p => <option key={p} value={p} className="bg-[#0a0a0f]">{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1 block">Type</label>
-                <select value={type} onChange={e => setType(e.target.value)} className="flex h-9 w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-1 text-sm text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20">
+                <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1.5 block font-medium">Type</label>
+                <select value={type} onChange={e => setType(e.target.value)} className="flex h-9 w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-1 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30">
                   {["carousel", "reel", "story", "video", "infographic"].map(t => <option key={t} value={t} className="bg-[#0a0a0f]">{t}</option>)}
                 </select>
               </div>
             </div>
             {platform === "instagram" && (
               <div>
-                <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1 block">IG Page</label>
-                <select value={page} onChange={e => setPage(e.target.value)} className="flex h-9 w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-1 text-sm text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20">
+                <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1.5 block font-medium">IG Page</label>
+                <select value={page} onChange={e => setPage(e.target.value)} className="flex h-9 w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-1 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30">
                   {IG_PAGES.map(p => <option key={p.name} value={p.name} className="bg-[#0a0a0f]">{p.name}</option>)}
                 </select>
               </div>
             )}
             <div>
-              <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1 block">Body / Draft</label>
+              <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1.5 block font-medium">Body / Draft</label>
               <textarea
                 value={body}
                 onChange={e => setBody(e.target.value)}
                 placeholder="Content body or draft text..."
-                className="flex w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-2 text-sm text-white placeholder:text-white/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20 min-h-[80px] resize-none"
+                className="flex w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-2 text-sm text-white placeholder:text-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 min-h-[80px] resize-none"
               />
             </div>
-            <div className="flex gap-2 pt-2">
+            <div className="flex gap-3 pt-2">
               <Button type="submit" variant="primary" className="flex-1">Add Content</Button>
               <Dialog.Close asChild><Button type="button" variant="ghost">Cancel</Button></Dialog.Close>
             </div>
@@ -116,70 +123,75 @@ function EditContentModal({ item, open, onOpenChange }: { item: Doc<"contentItem
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await updateContentItem({
-      id: item._id,
-      title: title.trim(),
-      page: platform === "instagram" ? page : platform,
-      type,
-      platform,
-      body: body.trim() || undefined,
-      stage,
-    });
-    onOpenChange(false);
+    try {
+      await updateContentItem({
+        id: item._id,
+        title: title.trim(),
+        page: platform === "instagram" ? page : platform,
+        type,
+        platform,
+        body: body.trim() || undefined,
+        stage,
+      });
+      toast.success("Content updated");
+      onOpenChange(false);
+    } catch {
+      toast.error("Failed to update content");
+    }
   };
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md rounded-2xl bg-[#0a0a0f] border border-white/[0.08] p-6 shadow-2xl">
+        <Dialog.Overlay className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md rounded-2xl bg-[#0c0c12] border border-white/[0.08] p-6 shadow-2xl">
           <div className="flex items-center justify-between mb-5">
-            <Dialog.Title className="text-sm font-semibold text-white/80">Edit Content</Dialog.Title>
+            <Dialog.Title className="text-base font-semibold text-white/90">Edit Content</Dialog.Title>
             <Dialog.Close asChild><button className="text-white/30 hover:text-white/60 transition-colors"><X className="h-4 w-4" /></button></Dialog.Close>
           </div>
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1 block">Title</label>
+              <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1.5 block font-medium">Title</label>
               <Input value={title} onChange={e => setTitle(e.target.value)} required />
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1 block">Platform</label>
-                <select value={platform} onChange={e => setPlatform(e.target.value)} className="flex h-9 w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-1 text-sm text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20">
+                <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1.5 block font-medium">Platform</label>
+                <select value={platform} onChange={e => setPlatform(e.target.value)} className="flex h-9 w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-1 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30">
                   {PLATFORMS.map(p => <option key={p} value={p} className="bg-[#0a0a0f]">{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1 block">Type</label>
-                <select value={type} onChange={e => setType(e.target.value)} className="flex h-9 w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-1 text-sm text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20">
+                <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1.5 block font-medium">Type</label>
+                <select value={type} onChange={e => setType(e.target.value)} className="flex h-9 w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-1 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30">
                   {["carousel", "reel", "story", "video", "infographic"].map(t => <option key={t} value={t} className="bg-[#0a0a0f]">{t}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1 block">Status</label>
-                <select value={stage} onChange={e => setStage(e.target.value)} className="flex h-9 w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-1 text-sm text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20">
+                <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1.5 block font-medium">Status</label>
+                <select value={stage} onChange={e => setStage(e.target.value)} className="flex h-9 w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-1 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30">
                   {STAGES.map(s => <option key={s.id} value={s.id} className="bg-[#0a0a0f]">{s.label}</option>)}
                 </select>
               </div>
             </div>
             {platform === "instagram" && (
               <div>
-                <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1 block">IG Page</label>
-                <select value={page} onChange={e => setPage(e.target.value)} className="flex h-9 w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-1 text-sm text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20">
+                <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1.5 block font-medium">IG Page</label>
+                <select value={page} onChange={e => setPage(e.target.value)} className="flex h-9 w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-1 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30">
                   {IG_PAGES.map(p => <option key={p.name} value={p.name} className="bg-[#0a0a0f]">{p.name}</option>)}
                 </select>
               </div>
             )}
             <div>
-              <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1 block">Body / Draft</label>
+              <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1.5 block font-medium">Body / Draft</label>
               <textarea
                 value={body}
                 onChange={e => setBody(e.target.value)}
                 placeholder="Content body..."
-                className="flex w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-2 text-sm text-white placeholder:text-white/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20 min-h-[80px] resize-none"
+                className="flex w-full rounded-xl bg-white/[0.04] border border-white/[0.08] px-3 py-2 text-sm text-white placeholder:text-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 min-h-[80px] resize-none"
               />
             </div>
-            <div className="flex gap-2 pt-2">
+            <div className="flex gap-3 pt-2">
               <Button type="submit" variant="primary" className="flex-1">Save Changes</Button>
               <Dialog.Close asChild><Button type="button" variant="ghost">Cancel</Button></Dialog.Close>
             </div>
@@ -196,19 +208,31 @@ export default function ContentContent() {
   const deleteContentItem = useMutation(api.contentItems.deleteContentItem);
 
   const [editingItem, setEditingItem] = useState<Doc<"contentItems"> | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: Id<"contentItems">; name: string } | null>(null);
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteContentItem({ id: deleteTarget.id });
+      toast.success("Content deleted");
+    } catch {
+      toast.error("Failed to delete");
+    }
+    setDeleteTarget(null);
+  };
 
   if (!contentItems) {
     return (
       <PageTransition>
-        <div className="mb-6">
-          <h1 className="text-lg font-semibold text-white/90">Content Pipeline</h1>
-          <p className="text-xs text-white/30 mt-0.5">Loading...</p>
+        <div className="mb-8">
+          <h1 className="text-xl font-semibold text-white/90 tracking-tight">Content Pipeline</h1>
+          <p className="text-xs text-white/40 mt-1">Loading...</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {STAGES.map(s => (
             <div key={s.id}>
-              <div className="h-6 mb-3 bg-white/[0.02] rounded animate-pulse" />
-              <div className="min-h-[200px] rounded-2xl bg-white/[0.01] border border-dashed border-white/[0.04] animate-pulse" />
+              <div className="h-6 mb-3 rounded animate-shimmer" />
+              <div className="min-h-[200px] rounded-2xl animate-shimmer" />
             </div>
           ))}
         </div>
@@ -227,10 +251,10 @@ export default function ContentContent() {
 
   return (
     <PageTransition>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-lg font-semibold text-white/90">Content Pipeline</h1>
-          <p className="text-xs text-white/30 mt-0.5">
+          <h1 className="text-xl font-semibold text-white/90 tracking-tight">Content Pipeline</h1>
+          <p className="text-xs text-white/40 mt-1">
             {contentItems.length} items · Instagram, Twitter, TikTok
           </p>
         </div>
@@ -247,8 +271,10 @@ export default function ContentContent() {
           return (
             <div key={stage.id}>
               <div className="flex items-center justify-between mb-3">
-                <h3 className={`text-xs font-medium uppercase tracking-wider ${stage.color}`}>{stage.label}</h3>
-                <Badge variant="default">{stageItems.length}</Badge>
+                <h3 className={`text-xs font-semibold uppercase tracking-wider ${stage.color}`}>{stage.label}</h3>
+                <span className="h-5 min-w-[20px] px-1 flex items-center justify-center rounded-full bg-white/[0.06] text-white/40 text-[10px] font-bold">
+                  {stageItems.length}
+                </span>
               </div>
               <div className="space-y-2 min-h-[200px] rounded-2xl p-2 bg-white/[0.01] border border-dashed border-white/[0.04]">
                 {stageItems.length === 0 ? (
@@ -263,7 +289,7 @@ export default function ContentContent() {
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.05 }}
-                        className={`group rounded-xl border p-3 transition-colors hover:bg-white/[0.04] ${stage.bg} cursor-pointer`}
+                        className={`group rounded-xl border p-3 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${stage.bg} cursor-pointer`}
                         onClick={() => setEditingItem(item)}
                       >
                         <p className="text-xs text-white/70 leading-relaxed mb-1.5">{item.title}</p>
@@ -276,22 +302,28 @@ export default function ContentContent() {
                           </div>
                           <Badge variant="default" className="text-[8px]">{item.type}</Badge>
                         </div>
-                        <div className="flex items-center justify-between mt-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mt-2 opacity-0 group-hover:opacity-100 transition-all" onClick={e => e.stopPropagation()}>
                           <div className="flex items-center gap-1">
-                            {prevStage ? (
-                              <button onClick={() => updateContentStage({ id: item._id, stage: prevStage })} className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.04] text-white/40 hover:text-white/70 transition-colors flex items-center gap-0.5">
+                            {prevStage && (
+                              <button onClick={() => {
+                                updateContentStage({ id: item._id, stage: prevStage });
+                                toast.success(`Moved to ${STAGES.find(s => s.id === prevStage)?.label}`);
+                              }} className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.04] text-white/40 hover:text-white/70 transition-all flex items-center gap-0.5 active:scale-95">
                                 <ChevronLeft className="h-2.5 w-2.5" /> Back
                               </button>
-                            ) : <span />}
+                            )}
                             {nextStage && (
-                              <button onClick={() => updateContentStage({ id: item._id, stage: nextStage })} className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.04] text-white/40 hover:text-white/70 transition-colors flex items-center gap-0.5">
+                              <button onClick={() => {
+                                updateContentStage({ id: item._id, stage: nextStage });
+                                toast.success(`Moved to ${STAGES.find(s => s.id === nextStage)?.label}`);
+                              }} className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.04] text-white/40 hover:text-white/70 transition-all flex items-center gap-0.5 active:scale-95">
                                 Advance <ChevronRight className="h-2.5 w-2.5" />
                               </button>
                             )}
                           </div>
                           <button
-                            onClick={() => { if (confirm(`Delete "${item.title}"?`)) deleteContentItem({ id: item._id }); }}
-                            className="text-white/20 hover:text-red-400 transition-colors"
+                            onClick={() => setDeleteTarget({ id: item._id, name: item.title })}
+                            className="text-white/20 hover:text-red-400 transition-all"
                           >
                             <Trash2 className="h-3 w-3" />
                           </button>
@@ -306,14 +338,18 @@ export default function ContentContent() {
         })}
       </div>
 
-      {/* Edit Content Modal */}
+      {/* Modals */}
       {editingItem && (
-        <EditContentModal
-          item={editingItem}
-          open={!!editingItem}
-          onOpenChange={(open) => { if (!open) setEditingItem(null); }}
-        />
+        <EditContentModal item={editingItem} open={!!editingItem} onOpenChange={(open) => { if (!open) setEditingItem(null); }} />
       )}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={() => setDeleteTarget(null)}
+        title="Delete Content?"
+        description="This action cannot be undone."
+        itemName={deleteTarget?.name}
+        onConfirm={handleDelete}
+      />
     </PageTransition>
   );
 }

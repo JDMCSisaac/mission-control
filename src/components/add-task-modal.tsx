@@ -7,6 +7,7 @@ import { api } from "../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
+import { toast } from "sonner";
 
 export function AddTaskModal({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -29,6 +30,7 @@ export function AddTaskModal({ children }: { children: React.ReactNode }) {
       nextAction: nextAction.trim(),
     });
     setOpen(false);
+    toast.success("Task added");
     resetForm();
   };
 

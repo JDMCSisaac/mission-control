@@ -4,21 +4,21 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-xl text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-xl text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:ring-offset-1 focus-visible:ring-offset-[#050507] disabled:pointer-events-none disabled:opacity-50 active:scale-[0.97]",
   {
     variants: {
       variant: {
-        default: "bg-white/10 text-white hover:bg-white/15 border border-white/[0.08]",
-        primary: "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/20",
-        success: "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/20",
-        destructive: "bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/20",
+        default: "bg-white/10 text-white hover:bg-white/15 border border-white/[0.08] hover:border-white/[0.15]",
+        primary: "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/20 hover:border-blue-500/30 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)]",
+        success: "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/20 hover:border-emerald-500/30 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)]",
+        destructive: "bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/20 hover:border-red-500/30 hover:shadow-[0_0_20px_rgba(244,63,94,0.15)]",
         ghost: "text-white/60 hover:text-white hover:bg-white/[0.05]",
-        outline: "border border-white/[0.1] text-white/70 hover:bg-white/[0.05] hover:text-white",
+        outline: "border border-white/[0.1] text-white/70 hover:bg-white/[0.05] hover:text-white hover:border-white/[0.2]",
       },
       size: {
         default: "h-8 px-3",
-        sm: "h-7 px-2 text-[11px]",
-        lg: "h-10 px-5",
+        sm: "h-7 px-2.5 text-[11px]",
+        lg: "h-10 px-5 text-sm",
         icon: "h-8 w-8",
       },
     },

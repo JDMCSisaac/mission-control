@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Nav } from "@/components/nav";
 import { ConvexClientProvider } from "@/components/convex-provider";
+import { ToastProvider } from "@/components/toast-provider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main className="mx-auto max-w-[1440px] px-3 md:px-6 py-4 md:py-6">
             {children}
           </main>
+          <ToastProvider />
         </ConvexClientProvider>
       </body>
     </html>

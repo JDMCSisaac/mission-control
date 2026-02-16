@@ -7,6 +7,7 @@ import { api } from "../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
+import { toast } from "sonner";
 
 export function AddClientModal({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -33,6 +34,7 @@ export function AddClientModal({ children }: { children: React.ReactNode }) {
       notes: notes.trim(),
     });
     setOpen(false);
+    toast.success("Client added");
     resetForm();
   };
 
